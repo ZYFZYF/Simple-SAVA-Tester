@@ -15,7 +15,7 @@ def test_send_ethernet():
 def test_send():
     B = '2001:da8:ff:212::41:23'
     for i in range(100):
-        a = IPv6(src='1111:2222:3:4444:5555:6666:7777:8888', dst=B) / UDP(sport=52984, dport=9877) / 'QAQQ'
+        a = IPv6(src='240c:c0a3:300:fff0:9f00:2675:be5c:f077', dst=B) / UDP(sport=52984, dport=9877) / 'QAQQ'
         time.sleep(1)
         send(a)
 
@@ -38,7 +38,7 @@ def test_trace_route():
 
 if __name__ == '__main__':
     # test_send_ethernet()
-    # test_send()
+    test_send()
     # send(IPv6(src='2402:f000:2:4001:4c0:f05d:b450:b37a', dst='2001:da8:ff:212::41:23') / UDP(sport=12345,
     #                                                                                          dport=9877) / 'Test')
-    test_trace_route()
+    # test_trace_route()
