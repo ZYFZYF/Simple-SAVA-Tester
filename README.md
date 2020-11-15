@@ -11,10 +11,13 @@
     - ![traceroute](traceroute.png)
  - server只负责保存活跃的client，不再负责下发具体的测试任务
     - client新启动后依次运行以下测试
+        - 正常发UDP包
         - 伪造各种测试向server发包测试其是否收到
         - 伪造server对若干个固定地址 + traceroute上的地址 进行溯源
         - 发现其他client，对其他client依次进行
+            - 正常发UDP包
             - 伪造各种测试向client发包测试是否收到
             - 伪造对端client对若干个固定地址 + traceroute上的地址 进行溯源
         - 然后对端反过来对client也做相应的事情
  - 其他要考虑的就是部署client情况了
+ - 控制信息似乎应该用TCP发送（UDP要是丢了就GG）
