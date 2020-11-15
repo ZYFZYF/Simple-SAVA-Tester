@@ -31,6 +31,14 @@ def parse_payload(pkt):
     return json.loads(pkt.payload.payload.payload.load)['data']
 
 
+def get_alive_clients():
+    if get_local_ipv6_addr() == SERVER_ADDR:
+        return []
+    send(IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT, dport=ACCESS_CLIENT_LIST_PORT))
+    clients = parse_payload(sniff(filter=f'port {ACCESS_CLIENT_LIST_PORT}', count=1)[0])
+    return [client for client in clients if client != get_local_ipv6_addr()]
+
+
 if __name__ == '__main__':
     print(get_local_ipv6_addr())
     # print(get_path_to(SERVER_ADDR))
