@@ -9,11 +9,11 @@ HEART_BEAT_COUNT = 10  # 一次发送心跳包的数量（担心UDP丢包）
 ACCESS_CLIENT_LIST_PORT = 15001  # 服务器端供访问当前活跃的client列表的端口
 
 HELLO_PORT = 15002  # 为了与某台机器测试而发送报文的端口
-FIRST_UNUSED_PORT = 15003  # 未使用的端口
+SPOOF_UDP_PORT = 15003  # 当伪造UDP包的时候用该端口发送
+SNIFF_READY_PORT = 15004  # 当sniff准备好的时候，会给对方该端口发送一个包表示准备好了
 
 TEST_REPEAT_COUNT = 100  # 每个测试包发送次数
-TEST_TIMEOUT_SECONDS = 20  # 每个测试等待时间
-WAIT_SECONDS = 10  # 收发交换等待时间
+TEST_TIMEOUT_SECONDS = 10  # 每个测试等待时间
 
 READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我准备好了
 
