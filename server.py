@@ -1,6 +1,6 @@
 from util import *
 from ClientManager import ClientManager
-from client import monitor_test, ready_packet
+from client import monitor_test
 
 clientManger = ClientManager()
 clientManger.start()
@@ -19,4 +19,3 @@ if __name__ == '__main__':
     threading.Thread(target=receive_heart_beat).start()
     threading.Thread(target=get_alive_clients).start()
     threading.Thread(target=monitor_test).start()
-    threading.Thread(target=ready_packet).start()
