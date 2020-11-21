@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 conf.verb = 0
 is_running_test = threading.Event()
+is_running_test.clear()
 is_ready_to_send = threading.Event()
 is_ready_to_send.clear()
 
@@ -39,8 +40,13 @@ def send_test_to(dst_addr, src_port=SPOOF_UDP_PORT, dst_port=SPOOF_UDP_PORT):
     local_addr = get_local_ipv6_addr()
     forge_addr = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
                                         'e' + local_addr[1:]] + [RANDOM_ADDR] + [SERVER_ADDR]  # TODO 能不能主动发现邻居地址并进行伪造
+    is_ready_to_send.wait()
+    is_ready_to_send.clear()
     send_control_message(len(forge_addr))
     for src_addr in forge_addr:
+        is_ready_to_send.wait()
+        is_ready_to_send.clear()
+        send_control_message(src_addr)
         is_ready_to_send.wait()
         is_ready_to_send.clear()
         send(IPv6(src=src_addr, dst=dst_addr) / UDP(sport=src_port, dport=dst_port), count=TEST_REPEAT_COUNT,
@@ -77,8 +83,11 @@ def receive_test_from(src_addr, src_port=SPOOF_UDP_PORT, dst_port=SPOOF_UDP_PORT
     forge_count = receive_control_message()
     print(f'get forge count = {forge_count}')
     for i in tqdm(range(forge_count)):
-        receive_count = len(sniff(filter=f'src port {src_port} && dst port {dst_port}', timeout=TEST_TIMEOUT_SECONDS,
-                                  count=TEST_REPEAT_COUNT, started_callback=send_ready_signal))
+        forge_addr = receive_control_message()
+        receive_count = len(list(filter(lambda pkt: parse_payload(pkt) == forge_addr,
+                                        sniff(filter=f'src port {src_port} && dst port {dst_port}',
+                                              timeout=TEST_TIMEOUT_SECONDS,
+                                              count=TEST_REPEAT_COUNT, started_callback=send_ready_signal))))
         print(f'receive {receive_count} packets')
         send_control_message(receive_count)
 
