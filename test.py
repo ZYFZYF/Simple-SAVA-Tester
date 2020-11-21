@@ -1,7 +1,8 @@
 from scapy.all import *
-from scapy.layers.inet6 import IPv6, UDP, Ether, traceroute6
+from scapy.layers.inet6 import IPv6, UDP, Ether, traceroute6, ICMPv6EchoRequest
 from scapy.as_resolvers import AS_resolver_radb
 import time
+from util import get_local_ipv6_addr
 
 
 def test_send_ethernet():
@@ -29,16 +30,28 @@ def test_recv():
 
 
 def test_trace_route():
-    a, b = traceroute6('2001:da8:ff:212::41:23')
+    # addr = '2402:f000:11:210::17'
+    addr = '2001:da8:ff:212::41:23'
+    a, b = traceroute6(addr)
     print(a.get_trace())
-    a.graph(target='>test.png', ASres=AS_resolver_radb(), type='png')
-    w = sorted(a.get_trace()['2001:da8:ff:212::41:23'].items(), key=lambda x: x[0])
+    a.graph(target='>test2.png', ASres=AS_resolver_radb(), type='png')
+    w = sorted(a.get_trace()[addr].items(), key=lambda x: x[0])
     print([i[1][0] for i in w])
+
+
+def test_icmp():
+    B = '2001:da8:ff:212::41:23'
+    for i in range(100):
+        # a = IPv6(src=get_local_ipv6_addr()[:-1] + '1', dst=B) / ICMPv6EchoRequest()
+        a = IPv6(src=B, dst='2402:f000:11:210::17') / ICMPv6EchoRequest()
+        time.sleep(1)
+        send(a)
 
 
 if __name__ == '__main__':
     # test_send_ethernet()
-    test_send()
+    # test_send()
     # send(IPv6(src='2402:f000:2:4001:4c0:f05d:b450:b37a', dst='2001:da8:ff:212::41:23') / UDP(sport=12345,
     #                                                                                          dport=9877) / 'Test')
-    # test_trace_route()
+    test_trace_route()
+    # test_icmp()

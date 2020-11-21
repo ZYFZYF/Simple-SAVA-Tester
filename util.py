@@ -2,7 +2,7 @@ import socket
 import json
 from config import *
 from scapy.all import *
-from scapy.layers.inet6 import IPv6, UDP, Ether, traceroute6
+from scapy.layers.inet6 import IPv6, UDP, Ether, traceroute6, ICMPv6EchoRequest
 
 
 # 通过IPv6包头拿到本机IPv6地址
@@ -17,8 +17,11 @@ def get_local_mac_addr():
 # 用traceroute获得到目的地路径
 def get_path_to(dst_addr):
     res, _ = traceroute6(dst_addr)
-    return [get_local_ipv6_addr()] + [item[1][0] for item in
-                                      sorted(res.get_trace()[dst_addr].items(), key=lambda x: x[0])]
+    if dst_addr not in res:
+        return [get_local_ipv6_addr(), dst_addr]
+    else:
+        return [get_local_ipv6_addr()] + [item[1][0] for item in
+                                          sorted(res.get_trace()[dst_addr].items(), key=lambda x: x[0])]
 
 
 # payload是dict

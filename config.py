@@ -21,4 +21,7 @@ READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我
 PING_TARGETS = ['2402:f000:11:210::17',
                 '2402:f000:0:404::5']  # Ping的路径
 
-VERBOSE = True  # 是否显示发包时的log
+RUN_NORMAL_TEST = True
+RUN_IP_SPOOF_TEST = False
+RUN_MAC_SPOOF_TEST = False
+RUN_ICMP_SPOOF_TEST = True
