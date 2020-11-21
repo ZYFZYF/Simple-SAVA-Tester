@@ -1,6 +1,7 @@
 SERVER_ADDR = '2001:da8:ff:212::41:23'  # 服务器地址
 DNS_ADDR = '2400:3200::1'  # 阿里云DNS服务器地址
-RANDOM_ADDR = '1234::5678'  # 随便造的地址
+RANDOM_ADDR = '1234::5678'  # 随便造的IPv6地址
+RANDOM_MAC = '11:22:33:44:55:66'
 
 HEART_BEAT_PORT = 15000  # 向服务器端发送心跳UDP包的端口
 HEART_BEAT_INTERVAL = 10  # 发送心跳的时间间隔

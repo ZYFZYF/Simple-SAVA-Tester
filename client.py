@@ -48,28 +48,41 @@ def send_test_to(skt, dst_addr):
 
     print('-------------------------------------------伪造源IP地址测试---------------------------------------------------')
     local_addr = get_local_ipv6_addr()
-    forge_addr = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
-                                        'e' + local_addr[1:]] + [RANDOM_ADDR] + [SERVER_ADDR]  # TODO 能不能主动发现邻居地址并进行伪造
-    send_control_message(skt, len(forge_addr))
-    for src_addr in forge_addr:
-        send_control_message(skt, src_addr)
+    forge_addr_list = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
+                                             'e' + local_addr[1:]] + [RANDOM_ADDR] + [
+                          SERVER_ADDR]  # TODO 能不能主动发现邻居地址并进行伪造
+    send_control_message(skt, len(forge_addr_list))
+    for forge_addr in forge_addr_list:
+        send_control_message(skt, forge_addr)
         recv_ready_signal()
-        send(IPv6(src=src_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
-            {'data': src_addr}),
-             count=TEST_REPEAT_COUNT, inter=0.01)
-        print(f'send {TEST_REPEAT_COUNT} packets to {dst_addr} with forged addr {src_addr}')
+        send(IPv6(src=forge_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
+            {'data': forge_addr}), count=TEST_REPEAT_COUNT, inter=0.01)
+        # print(f'send {TEST_REPEAT_COUNT} packets to {dst_addr} with forged addr {src_addr}')
         receive_count = recv_control_message(skt)
-        print(f'forge {src_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+        print(f'forge {forge_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+
+    print(f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
+    local_mac = get_local_mac_addr()
+    forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:], RANDOM_MAC]
+    send_control_message(skt, len(forge_mac_list))
+    for forge_mac in forge_mac_list:
+        send_control_message(skt, forge_mac)
+        recv_ready_signal()
+        print(f'forge mac is {forge_mac}')
+        sendp(Ether(src=forge_mac) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
+            {'data': forge_mac}), count=TEST_REPEAT_COUNT, inter=0.01)
+        receive_count = recv_control_message(skt)
+        print(f'forge {forge_mac} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+    # 与addr进行一系列测试，对面收包，自己收
 
 
-# 与addr进行一系列测试，对面收包，自己收
 def receive_test_from(skt, src_addr):
     def send_ready_signal():
         send_control_message(skt, READY_MESSAGE)
 
     print(f'-------------------------------------------发送空闲端口------------------------------------------------------')
     dst_port = get_unused_port()
-    print(f'get a free port is {dst_port}')
+    print(f'get a free port {dst_port}')
     send_control_message(skt, dst_port)
 
     print(f'--------------------------------------------正常包测试------------------------------------------------------')
@@ -89,6 +102,19 @@ def receive_test_from(skt, src_addr):
                                               count=TEST_REPEAT_COUNT,
                                               started_callback=send_ready_signal))))
         print(f'receive {receive_count} packets from {forge_addr}')
+        send_control_message(skt, receive_count)
+
+    print(f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
+    forge_count = recv_control_message(skt)
+    print(f'get forge count = {forge_count}')
+    for i in tqdm(range(forge_count)):
+        forge_mac = recv_control_message(skt)
+        receive_count = len(list(filter(lambda pkt: parse_payload(pkt) == forge_mac,
+                                        sniff(filter=f'dst port {dst_port}',
+                                              timeout=TEST_TIMEOUT_SECONDS,
+                                              count=TEST_REPEAT_COUNT,
+                                              started_callback=send_ready_signal))))
+        print(f'receive {receive_count} packets from {forge_mac}')
         send_control_message(skt, receive_count)
 
 
@@ -131,9 +157,10 @@ def main():
     print(f'running test are {running_tests}')
     while len(running_tests) > 0:
         running_tests = [addr for addr in running_tests if not do_test_with(addr)]
+    print(f'finish all tests!')
+    monitor_test()
 
 
 if __name__ == '__main__':
     threading.Thread(target=send_heart_beat).start()
-    threading.Thread(target=monitor_test).start()
     threading.Thread(target=main).start()
