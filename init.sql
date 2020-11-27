@@ -1,0 +1,3 @@
+create table IP_in_UDP(time varchar(30), src_ip varchar(100),src_mac varchar(100), dst_ip varchar(100), spoof_ip varchar(100), send_normal_num int, recv_normal_num int, send_spoof_num int, recv_spoof_num int)
+create table MAC_in_UDP(time varchar(30), src_ip varchar(100),src_mac varchar(100), dst_ip varchar(100), spoof_mac varchar(100), send_normal_num int, recv_normal_num int, send_spoof_num int, recv_spoof_num int)
+create table IP_in_ICMP(time varchar(30), src_ip varchar(100),src_mac varchar(100), spoof_ip varchar(100), ping_target varchar(100), path varchar(1000), send_normal_num int, recv_normal_num int, send_spoof_num int, recv_spoof_num int)
