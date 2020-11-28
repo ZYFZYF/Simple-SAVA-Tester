@@ -43,11 +43,11 @@ def send_test_to(skt, dst_addr):
     recv_ready_signal()
     send(IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port), count=TEST_REPEAT_COUNT, inter=0.01)
     recv_normal_count = recv_control_message(skt)
-    print(f'send from {get_local_ipv6_addr()} to {dst_addr} success {recv_normal_count}/{TEST_REPEAT_COUNT}')
+    print(f'send from {LOCAL_IPv6_ADDR} to {dst_addr} success {recv_normal_count}/{TEST_REPEAT_COUNT}')
 
     if RUN_IP_SPOOF_TEST:
         print('-------------------------------------------伪造源IP地址测试---------------------------------------------------')
-        local_addr = get_local_ipv6_addr()
+        local_addr = LOCAL_IPv6_ADDR
         forge_addr_list = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
                                                  'e' + local_addr[1:]] + [RANDOM_ADDR] + [
                               SERVER_ADDR]  # TODO 能不能主动发现邻居地址并进行伪造
@@ -60,7 +60,7 @@ def send_test_to(skt, dst_addr):
             # print(f'send {TEST_REPEAT_COUNT} packets to {dst_addr} with forged addr {src_addr}')
             receive_count = recv_control_message(skt)
             send_result_to_server(type='IP_in_UDP',
-                                  src_ip=get_local_ipv6_addr(),
+                                  src_ip=LOCAL_IPv6_ADDR,
                                   src_mac=get_local_mac_addr(),
                                   dst_ip=dst_addr,
                                   spoof_ip=forge_addr,
@@ -85,7 +85,7 @@ def send_test_to(skt, dst_addr):
                 {'data': forge_mac}), count=TEST_REPEAT_COUNT, inter=0.01)
             receive_count = recv_control_message(skt)
             send_result_to_server(type='MAC_in_UDP',
-                                  src_ip=get_local_ipv6_addr(),
+                                  src_ip=LOCAL_IPv6_ADDR,
                                   src_mac=get_local_mac_addr(),
                                   dst_ip=dst_addr,
                                   spoof_mac=forge_mac,
@@ -111,7 +111,7 @@ def send_test_to(skt, dst_addr):
                 send(IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest(), count=TEST_REPEAT_COUNT, inter=0.01)
                 receive_count = recv_control_message(skt)
                 send_result_to_server(type='IP_in_ICMP',
-                                      src_ip=get_local_ipv6_addr(),
+                                      src_ip=LOCAL_IPv6_ADDR,
                                       src_mac=get_local_mac_addr(),
                                       spoof_ip=dst_addr,
                                       ping_target=target,
@@ -134,6 +134,7 @@ def receive_test_from(skt, src_addr):
 
     print(f'--------------------------------------------正常包测试------------------------------------------------------')
     receive_count = len(sniff(filter=f'src host {src_addr} && dst port {dst_port}', timeout=TEST_TIMEOUT_SECONDS,
+                              iface=LOCAL_IPv6_IFACE,
                               count=TEST_REPEAT_COUNT, started_callback=send_ready_signal))
     print(f'receive {receive_count} packets')
     send_control_message(skt, receive_count)
@@ -145,7 +146,7 @@ def receive_test_from(skt, src_addr):
         for i in tqdm(range(forge_count)):
             forge_addr = recv_control_message(skt)
             receive_count = len(list(filter(lambda pkt: parse_payload(pkt) == forge_addr,
-                                            sniff(filter=f'dst port {dst_port}',
+                                            sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
                                                   timeout=TEST_TIMEOUT_SECONDS,
                                                   count=TEST_REPEAT_COUNT,
                                                   started_callback=send_ready_signal))))
@@ -160,7 +161,7 @@ def receive_test_from(skt, src_addr):
         for i in tqdm(range(forge_count)):
             forge_mac = recv_control_message(skt)
             receive_count = len(list(filter(lambda pkt: parse_payload(pkt) == forge_mac,
-                                            sniff(filter=f'dst port {dst_port}',
+                                            sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
                                                   timeout=TEST_TIMEOUT_SECONDS,
                                                   count=TEST_REPEAT_COUNT,
                                                   started_callback=send_ready_signal))))
@@ -177,10 +178,11 @@ def receive_test_from(skt, src_addr):
             print(f'{i}: need to ping {ping_num} targets')
             for j in range(ping_num):
                 ping_target = recv_control_message(skt)
-                receive_count = len(sniff(filter=f'src host {ping_target} && icmp6 && ip6[40] == 129',
-                                          timeout=TEST_TIMEOUT_SECONDS,
-                                          count=TEST_REPEAT_COUNT,
-                                          started_callback=send_ready_signal))
+                receive_count = len(
+                    sniff(filter=f'src host {ping_target} && icmp6 && ip6[40] == 129', iface=LOCAL_IPv6_IFACE,
+                          timeout=TEST_TIMEOUT_SECONDS,
+                          count=TEST_REPEAT_COUNT,
+                          started_callback=send_ready_signal))
                 send_control_message(skt, receive_count)
                 print(f'receive {receive_count} ping reply from {ping_target}')
 
@@ -188,7 +190,7 @@ def receive_test_from(skt, src_addr):
 # 监听测试请求
 def monitor_test():
     server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    server_socket.bind((get_local_ipv6_addr(), MONITOR_TCP_PORT))
+    server_socket.bind((LOCAL_IPv6_ADDR, MONITOR_TCP_PORT))
     server_socket.listen(5)
     print(f'start listening in {MONITOR_TCP_PORT} for test...')
     while True:
@@ -219,7 +221,7 @@ def main():
         return True
 
     running_tests = set([SERVER_ADDR] + get_alive_clients())
-    print(f'local addr is {get_local_ipv6_addr()}')
+    print(f'local addr is {LOCAL_IPv6_ADDR}')
     print(f'alive clients are {get_alive_clients()}')
     print(f'running test are {running_tests}')
     while len(running_tests) > 0:
