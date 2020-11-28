@@ -34,6 +34,7 @@
  - 路由器上似乎禁止了traceroute?
  - 其实没必要存数据库啊，直接放到csv文件里也行啊（但数据库是为了过滤）
  - sniff需要选择过滤的网卡，sudo yum install gcc python3-devel 安装psutil需要安装这个
+ - TCP Socket会把两次的数据接在一起... 黏包
  
 ## 进度
  - 测试的上限花费是等待时间*测试个数

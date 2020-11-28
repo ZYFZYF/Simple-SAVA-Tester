@@ -1,4 +1,4 @@
-import socket
+import socket, struct
 from util import *
 from tqdm import tqdm
 
@@ -22,11 +22,16 @@ def get_unused_port():
 
 # 通过TCP socket进行交互信息
 def send_control_message(skt, data):
-    skt.sendall(json.dumps({'data': data}).encode())
+    send_body = json.dumps({'data': data}).encode()
+    skt.sendall(struct.pack('i', len(send_body)))
+    skt.sendall(send_body)
 
 
 def recv_control_message(skt):
-    return json.loads(skt.recv(1024).decode())['data']
+    data_len = struct.unpack('i', skt.recv(4))[0]
+    data = skt.recv(data_len).decode()
+    print(f'receive data {data}')
+    return json.loads(data)['data']
 
 
 # 与addr进行一系列测试，自己发包，对面收
@@ -74,8 +79,8 @@ def send_test_to(skt, dst_addr):
         print(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
         local_mac = get_local_mac_addr()
-        forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:],
-                          RANDOM_MAC]
+        forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:]]
+        # RANDOM_MAC]
         send_control_message(skt, len(forge_mac_list))
         for forge_mac in forge_mac_list:
             send_control_message(skt, forge_mac)
@@ -103,9 +108,10 @@ def send_test_to(skt, dst_addr):
         send_control_message(skt, len(ping_targets))
         for i, ping_target in enumerate(ping_targets):
             path = get_path_to(ping_target)
-            send_control_message(skt, len(path) - 1)
-            print(f'in {i} path, we have {len(path) - 1} target to ping')
-            for target in path[1:]:
+            targets = [target for target in path[1:] if target != dst_addr]
+            send_control_message(skt, len(targets))
+            print(f'in {i} path, we have {len(targets)} target to ping')
+            for target in targets:
                 send_control_message(skt, target)
                 recv_ready_signal()
                 send(IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest(), count=TEST_REPEAT_COUNT, inter=0.01)
@@ -134,8 +140,7 @@ def receive_test_from(skt, src_addr):
 
     print(f'--------------------------------------------正常包测试------------------------------------------------------')
     receive_count = len(sniff(filter=f'src host {src_addr} && dst port {dst_port}', timeout=TEST_TIMEOUT_SECONDS,
-                              iface=LOCAL_IPv6_IFACE,
-                              count=TEST_REPEAT_COUNT, started_callback=send_ready_signal))
+                              iface=LOCAL_IPv6_IFACE, count=TEST_REPEAT_COUNT, started_callback=send_ready_signal))
     print(f'receive {receive_count} packets')
     send_control_message(skt, receive_count)
 

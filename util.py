@@ -95,12 +95,13 @@ def do_sql(sql):
 # 插入一行数据
 def insert_into(table_name, values):
     keys = list(values.keys())
+    os.makedirs('result', exist_ok=True)
     save_file = f'result/{table_name}.csv'
     if not os.path.exists(save_file):
         with open(save_file, 'w') as f:
-            f.write(','.join(keys))
+            f.write(','.join(keys) + '\n')
     with open(save_file, 'a') as f:
-        f.write(','.join([f"'{values[key]}'" for key in keys]))
+        f.write(','.join([f"'{values[key]}'" for key in keys]) + '\n')
     if SAVE_TO_DATABASE:
         do_sql(
             f'''insert into {table_name} ({','.join(keys)}) values ({','.join([f"'{values[key]}'" for key in keys])})''')
@@ -108,7 +109,9 @@ def insert_into(table_name, values):
 
 def clear_all_data():
     for table in ['IP_in_UDP', 'MAC_in_UDP', 'IP_in_ICMP']:
-        do_sql(f'truncate table {table}')
+        os.remove(f'result/{table}.csv')
+        if SAVE_TO_DATABASE:
+            do_sql(f'truncate table {table}')
 
 
 if __name__ == '__main__':

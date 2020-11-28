@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from util import *
 from ClientManager import ClientManager
 from client import monitor_test
@@ -20,7 +20,7 @@ def get_alive_clients():
 def receive_result():
     def save_result(pkt):
         data = parse_payload(pkt)
-        data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        data['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         table_name = data['type']
         del data['type']
         insert_into(table_name, data)
