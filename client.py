@@ -215,21 +215,23 @@ def monitor_test():
 def main():
     # 先与对端获得对方的可用端口，再进行收发测试
     def do_test_with(addr):
-        print(f'start test with {addr}')
-        skt = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        skt.connect((addr, MONITOR_TCP_PORT))
-        send_test_to(skt, addr)
-        receive_test_from(skt, addr)
-        skt.close()
-        print(f'finish test with {addr}')
-        return True
+        try:
+            print(f'start test with {addr}')
+            skt = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            skt.connect((addr, MONITOR_TCP_PORT))
+            send_test_to(skt, addr)
+            receive_test_from(skt, addr)
+            skt.close()
+            print(f'finish test with {addr}')
+        except Exception as e:
+            print(f'ERROR: {e}')
 
     running_tests = set([SERVER_ADDR] + get_alive_clients())
     print(f'local addr is {LOCAL_IPv6_ADDR}')
     print(f'alive clients are {get_alive_clients()}')
     print(f'running test are {running_tests}')
-    while len(running_tests) > 0:
-        running_tests = [addr for addr in running_tests if not do_test_with(addr)]
+    for addr in running_tests:
+        do_test_with(addr)
     print(f'finish all tests!')
     monitor_test()
 

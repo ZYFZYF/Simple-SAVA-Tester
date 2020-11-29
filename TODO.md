@@ -42,5 +42,7 @@
 ## 2020-11-29
  - windows上可以traceroute到好多路径但是没有测
     - 各个系统默认的traceroute方法不同，windows是icmp，mac/linux是udp，而程序里的traceroute是tcp
-    - 解决方法：三种方法都来，取个最长的
+    - 解决方法：三种方法都来，取个最长的（直接用ICMP了）
  - mac上client开的tcp连接 windows去连会超时
+    - 反过来mac去连windows直接报错unreachable
+    - 猜测是因为连接同一个AP，做了隔离？
