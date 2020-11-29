@@ -2,7 +2,7 @@ import socket
 import json, pymysql, psutil
 from config import *
 from scapy.all import *
-from scapy.layers.inet6 import IPv6, UDP, Ether, traceroute6, ICMPv6EchoRequest
+from scapy.layers.inet6 import IPv6, UDP, TCP, Ether, traceroute6, ICMPv6EchoRequest
 
 
 # 通过IPv6包头拿到本机IPv6地址
@@ -26,19 +26,36 @@ LOCAL_MAC_ADDR = get_local_mac_addr()
 LOCAL_IPv6_IFACE = get_ipv6_iface()
 
 
-# 用traceroute获得到目的地路径
-def get_path_to(dst_addr):
+def icmp_traceroute6(dst_addr):
+    ans, _ = sr(IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(), timeout=2, filter="icmp6")
+    res = [get_local_ipv6_addr()]
+    for snd, rcv in ans:
+        if rcv.src not in res:
+            res.append(rcv.src)
+    return res
+
+
+def tcp_traceroute6(dst_addr):
     res, _ = traceroute6(dst_addr)
-    if dst_addr not in res:
+    if dst_addr not in res.get_trace():
         return [get_local_ipv6_addr(), dst_addr]
     else:
         return [get_local_ipv6_addr()] + [item[1][0] for item in
                                           sorted(res.get_trace()[dst_addr].items(), key=lambda x: x[0])]
 
 
+# 用traceroute获得到目的地路径
+def get_path_to(dst_addr):
+    tcp_result = tcp_traceroute6(dst_addr)
+    icmp_result = icmp_traceroute6(dst_addr)
+    print(f'tcp result is {tcp_result}')
+    print(f'icmp result is {icmp_result}')
+    return tcp_result if len(tcp_result) > len(icmp_result) else icmp_result
+
+
 # payload是dict
 def reply_udp_packet(pkt, payload: dict):
-    print(f'receive get client list request from {pkt[IPv6].src}', payload)
+    # print(f'receive get client list request from {pkt[IPv6].src}', payload)
     send(IPv6(dst=pkt[IPv6].src) / UDP(sport=pkt[UDP].dport, dport=pkt[UDP].sport) / json.dumps(payload))
 
 
@@ -117,9 +134,10 @@ def clear_all_data():
 if __name__ == '__main__':
     # print(get_local_ipv6_addr())
     # print(get_path_to(SERVER_ADDR))
+    print(get_path_to(SERVER_ADDR))
     # print(get_if_addr6(conf.iface))
     #
     # print(get_if_hwaddr(conf.iface))
     # print(get_if_raw_addr6(conf.iface))
     # print(get_if_raw_hwaddr(conf.iface))
-    print(get_ipv6_iface())
+    # print(get_ipv6_iface())

@@ -6,3 +6,4 @@
 
  - 所需运行环境，python >= 3.6.8
  - 执行 pip install -r requirements.txt 之后执行 python3 client.py即可
+ 

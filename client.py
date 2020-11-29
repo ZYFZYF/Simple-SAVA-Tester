@@ -30,7 +30,6 @@ def send_control_message(skt, data):
 def recv_control_message(skt):
     data_len = struct.unpack('i', skt.recv(4))[0]
     data = skt.recv(data_len).decode()
-    print(f'receive data {data}')
     return json.loads(data)['data']
 
 
@@ -236,7 +235,6 @@ def main():
 
 
 def send_result_to_server(**data):
-    print(data)
     send(IPv6(dst=SERVER_ADDR) / UDP(sport=SEND_UDP_PORT, dport=RECEIVE_RESULT_PORT) / json.dumps({'data': data}))
 
 
