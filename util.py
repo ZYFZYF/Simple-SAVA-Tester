@@ -26,7 +26,7 @@ def get_ipv6_iface():
 
 def get_running_os():
     system = sys.platform
-    if system in ['windows', 'linux']:
+    if system in ['win32', 'win64', 'linux']:
         return system
     if system == 'darwin':
         return 'mac'
@@ -47,8 +47,12 @@ def get_connected_wifi_ssid():
     if RUNNING_OS == 'linux':
         pass
     # TODO 得找台windows电脑再测
-    if RUNNING_OS == 'windows':
-        pass
+    if RUNNING_OS in ['win32', 'win64']:
+        ret = subprocess.run(
+            "netsh wlan show interfaces | awk -F' SSID '  '/ SSID / {print $2}'",
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = ret.stdout.decode().replace(':', '').strip()
+        return output
     return 'UNKNOWN'
 
 
