@@ -1,5 +1,4 @@
-# SERVER_ADDR = '2001:da8:ff:212::41:23'  # 服务器地址
-SERVER_ADDR = '2001:da8:225:251:9279:fe26:55eb:4065'  # 暂时用的别人的服务器地址
+SERVER_ADDR = '2001:da8:ff:212::41:23'  # 服务器地址
 DNS_ADDR = '2400:3200::1'  # 阿里云DNS服务器地址
 RANDOM_ADDR = '1234::5678'  # 随便造的IPv6地址
 RANDOM_MAC = '11:22:33:44:55:66'
@@ -27,4 +26,4 @@ RUN_IP_SPOOF_TEST = True
 RUN_MAC_SPOOF_TEST = True
 RUN_ICMP_SPOOF_TEST = True
 
-SAVE_TO_DATABASE = False
+SAVE_TO_DATABASE = True

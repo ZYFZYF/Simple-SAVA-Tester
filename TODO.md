@@ -46,3 +46,4 @@
  - mac上client开的tcp连接 windows去连会超时
     - 反过来mac去连windows直接报错unreachable
     - 猜测是因为连接同一个AP，做了隔离？
+ - windows上发正常包1个也收不到

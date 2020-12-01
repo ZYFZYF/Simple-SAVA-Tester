@@ -1,6 +1,7 @@
-import socket, struct
-from util import *
+from scapy.layers.inet6 import Ether
 from tqdm import tqdm
+
+from util import *
 
 conf.verb = 0
 
@@ -63,7 +64,8 @@ def send_test_to(skt, dst_addr):
                 {'data': forge_addr}), count=TEST_REPEAT_COUNT, inter=0.01)
             # print(f'send {TEST_REPEAT_COUNT} packets to {dst_addr} with forged addr {src_addr}')
             receive_count = recv_control_message(skt)
-            send_result_to_server(type='IP_in_UDP',
+            send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                  type='IP_in_UDP',
                                   src_ip=LOCAL_IPv6_ADDR,
                                   src_mac=get_local_mac_addr(),
                                   dst_ip=dst_addr,
@@ -88,7 +90,8 @@ def send_test_to(skt, dst_addr):
             sendp(Ether(src=forge_mac) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
                 {'data': forge_mac}), count=TEST_REPEAT_COUNT, inter=0.01)
             receive_count = recv_control_message(skt)
-            send_result_to_server(type='MAC_in_UDP',
+            send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                  type='MAC_in_UDP',
                                   src_ip=LOCAL_IPv6_ADDR,
                                   src_mac=get_local_mac_addr(),
                                   dst_ip=dst_addr,
@@ -115,12 +118,13 @@ def send_test_to(skt, dst_addr):
                 recv_ready_signal()
                 send(IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest(), count=TEST_REPEAT_COUNT, inter=0.01)
                 receive_count = recv_control_message(skt)
-                send_result_to_server(type='IP_in_ICMP',
+                send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                      type='IP_in_ICMP',
                                       src_ip=LOCAL_IPv6_ADDR,
                                       src_mac=get_local_mac_addr(),
                                       spoof_ip=dst_addr,
                                       ping_target=target,
-                                      path=path,
+                                      path=','.join(path),
                                       send_normal_num=TEST_REPEAT_COUNT,
                                       recv_normal_num=recv_normal_count,
                                       send_spoof_num=TEST_REPEAT_COUNT,
@@ -225,6 +229,7 @@ def main():
             print(f'finish test with {addr}')
         except Exception as e:
             print(f'ERROR: {e}')
+            traceback.print_exc(e)
 
     running_tests = set([SERVER_ADDR] + get_alive_clients())
     print(f'local addr is {LOCAL_IPv6_ADDR}')

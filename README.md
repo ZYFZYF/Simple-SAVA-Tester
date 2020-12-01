@@ -7,4 +7,5 @@
  - 所需运行环境，python >= 3.6.8
  - 执行 pip install -r requirements.txt 之后执行 python3 client.py即可
  - 特别的，对windows用户来说，需要事先在https://nmap.org/npcap/#download安装npcap，并且以管理员权限运行client.py
+ - 对Linux or Mac用户，需要root权限，也就是sudo python3 client.py运行
  
