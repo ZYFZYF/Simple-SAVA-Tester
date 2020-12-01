@@ -229,7 +229,6 @@ def main():
             print(f'finish test with {addr}')
         except Exception as e:
             print(f'ERROR: {e}')
-            traceback.print_exc(e)
 
     running_tests = set([SERVER_ADDR] + get_alive_clients())
     print(f'local addr is {LOCAL_IPv6_ADDR}')
