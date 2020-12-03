@@ -13,15 +13,15 @@ def get_local_ipv6_addr():
     return IPv6(dst=DNS_ADDR).src
 
 
-def get_local_mac_addr():
-    return get_if_hwaddr(conf.iface)
-
-
 def get_ipv6_iface():
     for iface, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
             if addr.address == get_local_ipv6_addr():
                 return iface
+
+
+def get_local_mac_addr():
+    return get_if_hwaddr(get_ipv6_iface())
 
 
 def get_running_os():
@@ -166,13 +166,5 @@ def clear_all_data():
 
 
 if __name__ == '__main__':
-    # print(get_local_ipv6_addr())
-    # print(get_path_to(SERVER_ADDR))
-    # print(get_path_to(SERVER_ADDR))
-    # print(get_if_addr6(conf.iface))
-    #
-    # print(get_if_hwaddr(conf.iface))
-    # print(get_if_raw_addr6(conf.iface))
-    # print(get_if_raw_hwaddr(conf.iface))
-    # print(get_ipv6_iface())
     print(get_connected_wifi_ssid())
+    print(LOCAL_IPv6_ADDR, LOCAL_IPv6_IFACE, LOCAL_MAC_ADDR, LOCAL_WLAN_SSID)
