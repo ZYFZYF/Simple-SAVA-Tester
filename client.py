@@ -42,19 +42,13 @@ def send_test_to(skt, dst_addr):
     print('---------------------------------------------接受空闲端口-----------------------------------------------------')
     dst_port = recv_control_message(skt)
     print(f'prepare to send UDP packet to port {dst_port}')
-    print('---------------------------------------------正常包测试------------------------------------------------------')
-    # 每次进行伪造包发送时要等待ready信号
-    recv_ready_signal()
-    send(IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port), count=TEST_REPEAT_COUNT, inter=0.01)
-    recv_normal_count = recv_control_message(skt)
-    print(f'send from {LOCAL_IPv6_ADDR} to {dst_addr} success {recv_normal_count}/{TEST_REPEAT_COUNT}')
-
+    
+    local_addr = LOCAL_IPv6_ADDR
+    forge_addr_list = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
+                                             'e' + local_addr[1:]] + [RANDOM_ADDR, SERVER_ADDR, LOCAL_IPv6_ADDR]
     if RUN_IP_SPOOF_TEST:
         print('-------------------------------------------伪造源IP地址测试---------------------------------------------------')
-        local_addr = LOCAL_IPv6_ADDR
-        forge_addr_list = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
-                                                 'e' + local_addr[1:]] + [RANDOM_ADDR] + [
-                              SERVER_ADDR]
+
         send_control_message(skt, forge_addr_list)
         recv_ready_signal()
         start_time = time.time()
@@ -72,17 +66,16 @@ def send_test_to(skt, dst_addr):
                                   src_mac=LOCAL_MAC_ADDR,
                                   dst_ip=dst_addr,
                                   spoof_ip=forge_addr,
-                                  send_normal_num=TEST_REPEAT_COUNT,
-                                  recv_normal_num=recv_normal_count,
                                   send_spoof_num=TEST_REPEAT_COUNT,
                                   recv_spoof_num=receive_count)
             print(f'forge {forge_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
 
+    local_mac = LOCAL_MAC_ADDR
+    forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:]] + [
+        LOCAL_MAC_ADDR]
     if RUN_MAC_SPOOF_TEST:
         print(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
-        local_mac = get_local_mac_addr()
-        forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:]]
         # RANDOM_MAC]
         send_control_message(skt, forge_mac_list)
         recv_ready_signal()
@@ -98,11 +91,9 @@ def send_test_to(skt, dst_addr):
             send_result_to_server(ssid=LOCAL_WLAN_SSID,
                                   type='MAC_in_UDP',
                                   src_ip=LOCAL_IPv6_ADDR,
-                                  src_mac=get_local_mac_addr(),
+                                  src_mac=LOCAL_MAC_ADDR,
                                   dst_ip=dst_addr,
                                   spoof_mac=forge_mac,
-                                  send_normal_num=TEST_REPEAT_COUNT,
-                                  recv_normal_num=recv_normal_count,
                                   send_spoof_num=TEST_REPEAT_COUNT,
                                   recv_spoof_num=receive_count)
             print(f'forge {forge_mac} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
@@ -127,12 +118,10 @@ def send_test_to(skt, dst_addr):
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
                                       type='IP_in_ICMP',
                                       src_ip=LOCAL_IPv6_ADDR,
-                                      src_mac=get_local_mac_addr(),
+                                      src_mac=LOCAL_MAC_ADDR,
                                       spoof_ip=dst_addr,
                                       ping_target=target,
                                       path=','.join(path),
-                                      send_normal_num=TEST_REPEAT_COUNT,
-                                      recv_normal_num=recv_normal_count,
                                       send_spoof_num=TEST_REPEAT_COUNT,
                                       recv_spoof_num=receive_count)
                 print(f'ping target is {target} and success {receive_count}/{TEST_REPEAT_COUNT}')
@@ -146,12 +135,6 @@ def receive_test_from(skt, src_addr):
     dst_port = get_unused_port()
     print(f'get a free port {dst_port}')
     send_control_message(skt, dst_port)
-
-    print(f'--------------------------------------------正常包测试------------------------------------------------------')
-    receive_count = len(sniff(filter=f'src host {src_addr} && dst port {dst_port}', timeout=TEST_TIMEOUT_SECONDS,
-                              iface=LOCAL_IPv6_IFACE, count=TEST_REPEAT_COUNT, started_callback=send_ready_signal))
-    print(f'receive {receive_count} packets')
-    send_control_message(skt, receive_count)
 
     if RUN_IP_SPOOF_TEST:
         print(f'-----------------------------------------伪造源IP地址测试----------------------------------------------------')
