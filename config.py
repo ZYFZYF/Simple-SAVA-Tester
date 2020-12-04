@@ -19,11 +19,11 @@ TEST_TIMEOUT_SECONDS = 10  # 每个测试等待时间
 
 READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我准备好了
 
-PING_TARGETS = ['2402:f000:11:210::17',
-                '2402:f000:0:404::5']  # Ping的路径
+PING_TARGETS = ['2402:f000:11:210::17', '2402:f000:0:404::5']  # Ping的路径
+# PING_TARGETS = []
 
 RUN_IP_SPOOF_TEST = True
 RUN_MAC_SPOOF_TEST = True
 RUN_ICMP_SPOOF_TEST = True
 
-SAVE_TO_DATABASE = True
+SAVE_TO_DATABASE = False

@@ -1,5 +1,4 @@
 from scapy.layers.inet6 import Ether
-from tqdm import tqdm
 
 from util import *
 
@@ -55,19 +54,22 @@ def send_test_to(skt, dst_addr):
         local_addr = LOCAL_IPv6_ADDR
         forge_addr_list = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
                                                  'e' + local_addr[1:]] + [RANDOM_ADDR] + [
-                              SERVER_ADDR]  # TODO 能不能主动发现邻居地址并进行伪造
-        send_control_message(skt, len(forge_addr_list))
-        for forge_addr in forge_addr_list:
-            send_control_message(skt, forge_addr)
-            recv_ready_signal()
-            send(IPv6(src=forge_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
-                {'data': forge_addr}), count=TEST_REPEAT_COUNT, inter=0.01)
-            # print(f'send {TEST_REPEAT_COUNT} packets to {dst_addr} with forged addr {src_addr}')
-            receive_count = recv_control_message(skt)
+                              SERVER_ADDR]
+        send_control_message(skt, forge_addr_list)
+        recv_ready_signal()
+        start_time = time.time()
+        for i in range(TEST_REPEAT_COUNT):
+            for forge_addr in forge_addr_list:
+                send(IPv6(src=forge_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
+                    {'data': forge_addr}))
+        print(
+            f'send {TEST_REPEAT_COUNT * len(forge_addr_list)} packets and cost {int(time.time() - start_time)} seconds')
+        recv_count_dict = recv_control_message(skt)
+        for forge_addr, receive_count in recv_count_dict.items():
             send_result_to_server(ssid=LOCAL_WLAN_SSID,
                                   type='IP_in_UDP',
                                   src_ip=LOCAL_IPv6_ADDR,
-                                  src_mac=get_local_mac_addr(),
+                                  src_mac=LOCAL_MAC_ADDR,
                                   dst_ip=dst_addr,
                                   spoof_ip=forge_addr,
                                   send_normal_num=TEST_REPEAT_COUNT,
@@ -82,14 +84,17 @@ def send_test_to(skt, dst_addr):
         local_mac = get_local_mac_addr()
         forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:]]
         # RANDOM_MAC]
-        send_control_message(skt, len(forge_mac_list))
-        for forge_mac in forge_mac_list:
-            send_control_message(skt, forge_mac)
-            recv_ready_signal()
-            # print(f'forge mac is {forge_mac}')
-            sendp(Ether(src=forge_mac) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
-                {'data': forge_mac}), count=TEST_REPEAT_COUNT, inter=0.01)
-            receive_count = recv_control_message(skt)
+        send_control_message(skt, forge_mac_list)
+        recv_ready_signal()
+        start_time = time.time()
+        for i in range(TEST_REPEAT_COUNT):
+            for forge_mac in forge_mac_list:
+                sendp(Ether(src=forge_mac) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
+                    {'data': forge_mac}))
+        print(
+            f'send {TEST_REPEAT_COUNT * len(forge_mac_list)} packets and cost {int(time.time() - start_time)} seconds')
+        recv_count_dict = recv_control_message(skt)
+        for forge_mac, receive_count in recv_count_dict.items():
             send_result_to_server(ssid=LOCAL_WLAN_SSID,
                                   type='MAC_in_UDP',
                                   src_ip=LOCAL_IPv6_ADDR,
@@ -111,13 +116,14 @@ def send_test_to(skt, dst_addr):
         for i, ping_target in enumerate(ping_targets):
             path = get_path_to(ping_target)
             targets = [target for target in path[1:] if target != dst_addr]
-            send_control_message(skt, len(targets))
+            send_control_message(skt, targets)
             print(f'in {i} path, we have {len(targets)} target to ping')
-            for target in targets:
-                send_control_message(skt, target)
-                recv_ready_signal()
-                send(IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest(), count=TEST_REPEAT_COUNT, inter=0.01)
-                receive_count = recv_control_message(skt)
+            recv_ready_signal()
+            for j in range(TEST_REPEAT_COUNT):
+                for target in targets:
+                    send(IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest())
+            recv_count_dict = recv_control_message(skt)
+            for target, receive_count in recv_count_dict.items():
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
                                       type='IP_in_ICMP',
                                       src_ip=LOCAL_IPv6_ADDR,
@@ -149,32 +155,42 @@ def receive_test_from(skt, src_addr):
 
     if RUN_IP_SPOOF_TEST:
         print(f'-----------------------------------------伪造源IP地址测试----------------------------------------------------')
-        forge_count = recv_control_message(skt)
-        print(f'get forge count = {forge_count}')
-        for i in tqdm(range(forge_count)):
-            forge_addr = recv_control_message(skt)
-            receive_count = len(list(filter(lambda pkt: parse_payload(pkt) == forge_addr,
-                                            sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
-                                                  timeout=TEST_TIMEOUT_SECONDS,
-                                                  count=TEST_REPEAT_COUNT,
-                                                  started_callback=send_ready_signal))))
+        forge_addr_list = recv_control_message(skt)
+        print(f'get forge addr list = {forge_addr_list}')
+        recv_count_dict = {forge_addr: 0 for forge_addr in forge_addr_list}
+
+        def count_recv_spoof_ip_pkt(pkt):
+            forge_addr = parse_payload(pkt)
+            if forge_addr in forge_addr_list:
+                recv_count_dict[forge_addr] += 1
+            else:
+                print('Bazinga! Look at what you received!')
+
+        sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE, timeout=TEST_TIMEOUT_SECONDS,
+              started_callback=send_ready_signal, prn=count_recv_spoof_ip_pkt)
+        for forge_addr, receive_count in recv_count_dict.items():
             print(f'receive {receive_count} packets from {forge_addr}')
-            send_control_message(skt, receive_count)
+        send_control_message(skt, recv_count_dict)
 
     if RUN_MAC_SPOOF_TEST:
         print(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
-        forge_count = recv_control_message(skt)
-        print(f'get forge count = {forge_count}')
-        for i in tqdm(range(forge_count)):
-            forge_mac = recv_control_message(skt)
-            receive_count = len(list(filter(lambda pkt: parse_payload(pkt) == forge_mac,
-                                            sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
-                                                  timeout=TEST_TIMEOUT_SECONDS,
-                                                  count=TEST_REPEAT_COUNT,
-                                                  started_callback=send_ready_signal))))
+        forge_mac_list = recv_control_message(skt)
+        print(f'get forge mac list = {forge_mac_list}')
+        recv_count_dict = {forge_mac: 0 for forge_mac in forge_mac_list}
+
+        def count_recv_spoof_mac_pkt(pkt):
+            forge_mac = parse_payload(pkt)
+            if forge_mac in forge_mac_list:
+                recv_count_dict[forge_mac] += 1
+            else:
+                print('Bazinga! Look at what you received!')
+
+        sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE, timeout=TEST_TIMEOUT_SECONDS,
+              started_callback=send_ready_signal, prn=count_recv_spoof_mac_pkt)
+        for forge_mac, receive_count in recv_count_dict.items():
             print(f'receive {receive_count} packets from {forge_mac}')
-            send_control_message(skt, receive_count)
+        send_control_message(skt, recv_count_dict)
 
     if RUN_ICMP_SPOOF_TEST:
         print(
@@ -182,17 +198,20 @@ def receive_test_from(skt, src_addr):
         path_count = recv_control_message(skt)
         print(f'get path count is {path_count}')
         for i in range(path_count):
-            ping_num = recv_control_message(skt)
-            print(f'{i}: need to ping {ping_num} targets')
-            for j in range(ping_num):
-                ping_target = recv_control_message(skt)
-                receive_count = len(
-                    sniff(filter=f'src host {ping_target} && icmp6 && ip6[40] == 129', iface=LOCAL_IPv6_IFACE,
-                          timeout=TEST_TIMEOUT_SECONDS,
-                          count=TEST_REPEAT_COUNT,
-                          started_callback=send_ready_signal))
-                send_control_message(skt, receive_count)
+            ping_targets = recv_control_message(skt)
+            print(f'{i}: need to ping {ping_targets}')
+            recv_count_dict = {target: 0 for target in ping_targets}
+
+            def count_recv_icmp_pkt(pkt):
+                if pkt[IPv6].src in recv_count_dict.keys():
+                    recv_count_dict[pkt[IPv6].src] += 1
+
+            sniff(filter=f'dst host {LOCAL_IPv6_ADDR} && icmp6 && ip6[40] == 129', iface=LOCAL_IPv6_IFACE,
+                  timeout=TEST_TIMEOUT_SECONDS, started_callback=send_ready_signal, prn=count_recv_icmp_pkt)
+            for ping_target, receive_count in recv_count_dict.items():
                 print(f'receive {receive_count} ping reply from {ping_target}')
+
+            send_control_message(skt, recv_count_dict)
 
 
 # 监听测试请求
