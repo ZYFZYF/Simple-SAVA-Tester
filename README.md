@@ -5,7 +5,7 @@
 ## Client运行方法（For windows）
 
  - 所需python >= 3.6.8
- - 在https://nmap.org/npcap/#download安装npcap
+ - 在https://nmap.org/npcap/#download 安装npcap
  - 执行 pip install -r requirements.txt 之后以管理员权限执行 python3 client.py即可
 
 ## Client运行方法（For mac/linux）
