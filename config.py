@@ -1,7 +1,7 @@
 SERVER_ADDR = '2001:da8:ff:212::41:23'  # 服务器地址
 DNS_ADDR = '2400:3200::1'  # 阿里云DNS服务器地址
 RANDOM_ADDR = '1234::5678'  # 随便造的IPv6地址
-RANDOM_MAC = '11:22:33:44:55:66'
+RANDOM_MAC = '00:22:33:44:55:66'
 
 HEART_BEAT_PORT = 15000  # 向服务器端发送心跳UDP包的端口
 HEART_BEAT_INTERVAL = 10  # 发送心跳的时间间隔
@@ -15,7 +15,7 @@ MONITOR_TCP_PORT = 15004  # client监听该端口来建立TCP连接与其他clie
 FIRST_UNUSED_PORT = 15005  # 分配给做测试用
 
 TEST_REPEAT_COUNT = 100  # 每个测试包发送次数
-TEST_TIMEOUT_SECONDS = 10  # 每个测试等待时间
+TEST_TIMEOUT_SECONDS = 15  # 每个测试等待时间
 
 READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我准备好了
 

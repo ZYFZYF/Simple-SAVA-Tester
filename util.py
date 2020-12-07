@@ -4,7 +4,7 @@ import json
 import psutil
 import pymysql
 from scapy.all import *
-from scapy.layers.inet6 import IPv6, UDP, traceroute6, ICMPv6EchoRequest
+from scapy.layers.inet6 import IPv6, Ether, UDP, traceroute6, ICMPv6EchoRequest
 
 from config import *
 
@@ -88,7 +88,8 @@ NEXT_HOP_MAC = get_next_hop_mac()
 
 
 def icmp_traceroute6(dst_addr):
-    ans, _ = sr(IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(), timeout=2, filter="icmp6")
+    ans, _ = sr(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(), timeout=2,
+                filter="icmp6")
     res = [get_local_ipv6_addr()]
     for snd, rcv in ans:
         if rcv.src not in res:
@@ -115,7 +116,8 @@ def get_path_to(dst_addr):
 # payload是dict
 def reply_udp_packet(pkt, payload: dict):
     # print(f'receive get client list request from {pkt[IPv6].src}', payload)
-    send(IPv6(dst=pkt[IPv6].src) / UDP(sport=pkt[UDP].dport, dport=pkt[UDP].sport) / json.dumps(payload))
+    sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=pkt[IPv6].src) / UDP(sport=pkt[UDP].dport,
+                                                                  dport=pkt[UDP].sport) / json.dumps(payload))
 
 
 # 从payload中解析出json数据
@@ -127,7 +129,8 @@ def get_alive_clients():
     if get_local_ipv6_addr() == SERVER_ADDR:
         return []
     while True:
-        send(IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT, dport=ACCESS_CLIENT_LIST_PORT))
+        sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT,
+                                                                    dport=ACCESS_CLIENT_LIST_PORT))
         recv_packets = sniff(filter=f'dst host {LOCAL_IPv6_ADDR} && port {ACCESS_CLIENT_LIST_PORT}', count=1,
                              timeout=3, iface=LOCAL_IPv6_IFACE)
         if len(recv_packets) > 0:
@@ -206,7 +209,7 @@ def get_local_addr_inside_subnet(ip_addr, prefix_len):
 
 
 def get_spoof_ips(dst_addr):
-    ip_list = []
+    ip_list = [RANDOM_ADDR]
     # 测试本子网的outbound
     for i in AVAILABLE_PREFIX:
         ip_list.append(get_local_addr_inside_subnet(LOCAL_IPv6_ADDR, i))
@@ -241,7 +244,7 @@ def get_local_mac_inside_subnet(ip_addr, prefix_len):
 
 
 def get_spoof_macs():
-    return [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
+    return [RANDOM_MAC] + [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
 
 
 if __name__ == '__main__':

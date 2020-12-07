@@ -1,5 +1,3 @@
-from scapy.layers.inet6 import Ether
-
 from util import *
 
 conf.verb = 0
@@ -7,7 +5,7 @@ conf.verb = 0
 
 def send_heart_beat():
     while True:
-        send(IPv6(dst=SERVER_ADDR) / UDP(dport=HEART_BEAT_PORT), count=HEART_BEAT_COUNT)
+        sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(dport=HEART_BEAT_PORT), count=HEART_BEAT_COUNT)
         time.sleep(HEART_BEAT_INTERVAL)
 
 
@@ -52,7 +50,8 @@ def send_test_to(skt, dst_addr):
         start_time = time.time()
         for i in range(TEST_REPEAT_COUNT):
             for forge_addr in forge_addr_list:
-                send(IPv6(src=forge_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
+                sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(src=forge_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT,
+                                                                                         dport=dst_port) / json.dumps(
                     {'data': forge_addr}))
         print(
             f'send {TEST_REPEAT_COUNT * len(forge_addr_list)} packets and cost {int(time.time() - start_time)} seconds')
@@ -78,7 +77,8 @@ def send_test_to(skt, dst_addr):
         start_time = time.time()
         for i in range(TEST_REPEAT_COUNT):
             for forge_mac in forge_mac_list:
-                sendp(Ether(src=forge_mac) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT, dport=dst_port) / json.dumps(
+                sendp(Ether(src=forge_mac, dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT,
+                                                                                        dport=dst_port) / json.dumps(
                     {'data': forge_mac}))
         print(
             f'send {TEST_REPEAT_COUNT * len(forge_mac_list)} packets and cost {int(time.time() - start_time)} seconds')
@@ -108,7 +108,7 @@ def send_test_to(skt, dst_addr):
             recv_ready_signal()
             for j in range(TEST_REPEAT_COUNT):
                 for target in targets:
-                    send(IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest())
+                    sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest())
             recv_count_dict = recv_control_message(skt)
             for target, receive_count in recv_count_dict.items():
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
@@ -239,7 +239,8 @@ def main():
 
 
 def send_result_to_server(**data):
-    send(IPv6(dst=SERVER_ADDR) / UDP(sport=SEND_UDP_PORT, dport=RECEIVE_RESULT_PORT) / json.dumps({'data': data}))
+    sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=SEND_UDP_PORT,
+                                                                dport=RECEIVE_RESULT_PORT) / json.dumps({'data': data}))
 
 
 if __name__ == '__main__':
