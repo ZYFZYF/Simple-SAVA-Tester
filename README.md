@@ -2,10 +2,13 @@
 
 本项目用于清华校园网IPv6源地址验证部署情况测试。
 
-## Client运行方法
+## Client运行方法（For windows）
 
- - 所需运行环境，python >= 3.6.8
- - 执行 pip install -r requirements.txt 之后执行 python3 client.py即可
- - 特别的，对windows用户来说，需要事先在https://nmap.org/npcap/#download安装npcap，并且以管理员权限运行client.py
- - 对Linux or Mac用户，需要root权限，也就是sudo python3 client.py运行
+ - 所需python >= 3.6.8
+ - 在https://nmap.org/npcap/#download安装npcap
+ - 执行 pip install -r requirements.txt 之后以管理员权限执行 python3 client.py即可
+
+## Client运行方法（For mac/linux）
+ - 所需python >= 3.6.8
+ - 执行 pip install -r requirements.txt 之后执行 sudo python3 client.py即可
  
