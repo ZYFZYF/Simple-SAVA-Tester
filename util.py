@@ -69,7 +69,8 @@ def get_next_hop_mac():
             else:
                 raise Exception('Not supported OS')
 
-            subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            while subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) != 0:
+                pass
 
         threading.Thread(target=send_system_ping_pkt).start()
 
@@ -88,12 +89,12 @@ NEXT_HOP_MAC = get_next_hop_mac()
 
 
 def icmp_traceroute6(dst_addr):
-    ans, _ = sr(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(), timeout=2,
-                filter="icmp6")
+    ans, _ = srp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(), timeout=2,
+                 filter="icmp6")
     res = [get_local_ipv6_addr()]
     for snd, rcv in ans:
-        if rcv.src not in res:
-            res.append(rcv.src)
+        if rcv[IPv6].src not in res:
+            res.append(rcv[IPv6].src)
     return res
 
 
@@ -256,3 +257,5 @@ if __name__ == '__main__':
     # print(get_spoof_macs())
     # print(get_alive_clients())
     print(get_next_hop_mac())
+    # print(get_path_to(SERVER_ADDR))
+    print(icmp_traceroute6(SERVER_ADDR))
