@@ -64,18 +64,18 @@ def get_next_hop_mac():
         def send_system_ping_pkt():
             if RUNNING_OS in ['linux', 'mac']:
                 cmd = ['ping6', '-c', '3', DNS_ADDR]
-            elif RUNNING_OS == 'linux':
+            elif RUNNING_OS == 'windows':
                 cmd = ['ping', '-6', '-n', '3', DNS_ADDR]
             else:
-                raise Exception('Not supported OS')
+                raise Exception(f'Not supported OS {RUNNING_OS}')
 
             while subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) != 0:
                 pass
+            print('ping packet send finished')
 
         threading.Thread(target=send_system_ping_pkt).start()
 
-    system_ping_pkt = sniff(filter=f'icmp6 && src host {get_local_ipv6_addr()} && dst host {DNS_ADDR}', count=1,
-                            iface=get_ipv6_iface(),
+    system_ping_pkt = sniff(filter=f'icmp6 && dst host {DNS_ADDR}', count=1, iface=get_ipv6_iface(),
                             started_callback=send_system_ping_pkt_thread)
     print(f'get the mac address of next hop is {system_ping_pkt[0].dst}')
     return system_ping_pkt[0].dst
@@ -118,7 +118,8 @@ def get_path_to(dst_addr):
 def reply_udp_packet(pkt, payload: dict):
     # print(f'receive get client list request from {pkt[IPv6].src}', payload)
     sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=pkt[IPv6].src) / UDP(sport=pkt[UDP].dport,
-                                                                  dport=pkt[UDP].sport) / json.dumps(payload))
+                                                                  dport=pkt[UDP].sport) / json.dumps(payload),
+          iface=LOCAL_IPv6_IFACE)
 
 
 # 从payload中解析出json数据
@@ -131,7 +132,8 @@ def get_alive_clients():
         return []
     while True:
         sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT,
-                                                                    dport=ACCESS_CLIENT_LIST_PORT))
+                                                                    dport=ACCESS_CLIENT_LIST_PORT),
+              iface=LOCAL_IPv6_IFACE)
         recv_packets = sniff(filter=f'dst host {LOCAL_IPv6_ADDR} && port {ACCESS_CLIENT_LIST_PORT}', count=1,
                              timeout=3, iface=LOCAL_IPv6_IFACE)
         if len(recv_packets) > 0:

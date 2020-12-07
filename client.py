@@ -5,7 +5,8 @@ conf.verb = 0
 
 def send_heart_beat():
     while True:
-        sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(dport=HEART_BEAT_PORT), count=HEART_BEAT_COUNT)
+        sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(dport=HEART_BEAT_PORT), count=HEART_BEAT_COUNT,
+              iface=LOCAL_IPv6_IFACE)
         time.sleep(HEART_BEAT_INTERVAL)
 
 
@@ -52,7 +53,7 @@ def send_test_to(skt, dst_addr):
             for forge_addr in forge_addr_list:
                 sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(src=forge_addr, dst=dst_addr) / UDP(sport=SEND_UDP_PORT,
                                                                                          dport=dst_port) / json.dumps(
-                    {'data': forge_addr}))
+                    {'data': forge_addr}), iface=LOCAL_IPv6_IFACE)
         print(
             f'send {TEST_REPEAT_COUNT * len(forge_addr_list)} packets and cost {int(time.time() - start_time)} seconds')
         recv_count_dict = recv_control_message(skt)
@@ -79,7 +80,7 @@ def send_test_to(skt, dst_addr):
             for forge_mac in forge_mac_list:
                 sendp(Ether(src=forge_mac, dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT,
                                                                                         dport=dst_port) / json.dumps(
-                    {'data': forge_mac}))
+                    {'data': forge_mac}), iface=LOCAL_IPv6_IFACE)
         print(
             f'send {TEST_REPEAT_COUNT * len(forge_mac_list)} packets and cost {int(time.time() - start_time)} seconds')
         recv_count_dict = recv_control_message(skt)
@@ -108,7 +109,8 @@ def send_test_to(skt, dst_addr):
             recv_ready_signal()
             for j in range(TEST_REPEAT_COUNT):
                 for target in targets:
-                    sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest())
+                    sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(src=dst_addr, dst=target) / ICMPv6EchoRequest(),
+                          iface=LOCAL_IPv6_IFACE)
             recv_count_dict = recv_control_message(skt)
             for target, receive_count in recv_count_dict.items():
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
@@ -240,7 +242,8 @@ def main():
 
 def send_result_to_server(**data):
     sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=SEND_UDP_PORT,
-                                                                dport=RECEIVE_RESULT_PORT) / json.dumps({'data': data}))
+                                                                dport=RECEIVE_RESULT_PORT) / json.dumps({'data': data}),
+          iface=LOCAL_IPv6_IFACE)
 
 
 if __name__ == '__main__':
