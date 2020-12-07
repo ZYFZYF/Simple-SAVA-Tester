@@ -27,7 +27,9 @@ def get_local_mac_addr():
 
 def get_running_os():
     system = sys.platform
-    if system in ['win32', 'win64', 'linux']:
+    if system in ['win32', 'win64']:
+        return 'windows'
+    if system in ['linux']:
         return system
     if system == 'darwin':
         return 'mac'
@@ -47,8 +49,7 @@ def get_connected_wifi_ssid():
     # TODO 先不管Linux用户
     if RUNNING_OS == 'linux':
         pass
-    # TODO 得找台windows电脑再测
-    if RUNNING_OS in ['win32', 'win64']:
+    if RUNNING_OS == 'windows':
         ret = subprocess.run(
             "netsh wlan show interfaces | awk -F' SSID '  '/ SSID / {print $2}'",
             shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -57,10 +58,33 @@ def get_connected_wifi_ssid():
     return 'UNKNOWN'
 
 
+# 通过系统ping来获取下一跳也就是网关的mac地址
+def get_next_hop_mac():
+    def send_system_ping_pkt_thread():
+        def send_system_ping_pkt():
+            if RUNNING_OS in ['linux', 'mac']:
+                cmd = ['ping6', '-c', '3', DNS_ADDR]
+            elif RUNNING_OS == 'linux':
+                cmd = ['ping', '-6', '-n', '3', DNS_ADDR]
+            else:
+                raise Exception('Not supported OS')
+
+            subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        threading.Thread(target=send_system_ping_pkt).start()
+
+    system_ping_pkt = sniff(filter=f'icmp6 && src host {get_local_ipv6_addr()} && dst host {DNS_ADDR}', count=1,
+                            iface=get_ipv6_iface(),
+                            started_callback=send_system_ping_pkt_thread)
+    print(f'get the mac address of next hop is {system_ping_pkt[0].dst}')
+    return system_ping_pkt[0].dst
+
+
 LOCAL_IPv6_ADDR = get_local_ipv6_addr()
 LOCAL_MAC_ADDR = get_local_mac_addr()
 LOCAL_IPv6_IFACE = get_ipv6_iface()
 LOCAL_WLAN_SSID = get_connected_wifi_ssid()
+NEXT_HOP_MAC = get_next_hop_mac()
 
 
 def icmp_traceroute6(dst_addr):
@@ -222,8 +246,10 @@ def get_spoof_macs():
 
 if __name__ == '__main__':
     # print(get_spoof_ips(SERVER_ADDR))
-    print(translate_mac_addr_to_int(LOCAL_MAC_ADDR))
-
-    print(translate_int_to_mac_addr(translate_mac_addr_to_int(LOCAL_MAC_ADDR)))
-    print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
-    print(get_spoof_macs())
+    # print(translate_mac_addr_to_int(LOCAL_MAC_ADDR))
+    #
+    # print(translate_int_to_mac_addr(translate_mac_addr_to_int(LOCAL_MAC_ADDR)))
+    # print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
+    # print(get_spoof_macs())
+    # print(get_alive_clients())
+    print(get_next_hop_mac())
