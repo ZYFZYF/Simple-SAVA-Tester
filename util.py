@@ -89,8 +89,8 @@ NEXT_HOP_MAC = get_next_hop_mac()
 
 
 def icmp_traceroute6(dst_addr):
-    ans, _ = srp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(), timeout=2,
-                 filter="icmp6")
+    ans, _ = srp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr, hlim=(1, 30)) / ICMPv6EchoRequest(),
+                 timeout=2, filter="icmp6", iface=LOCAL_IPv6_IFACE)
     res = [get_local_ipv6_addr()]
     for snd, rcv in ans:
         if rcv[IPv6].src not in res:
@@ -219,16 +219,11 @@ def get_spoof_ips(dst_addr):
     for i in AVAILABLE_PREFIX:
         ip_list.append(get_local_addr_inside_subnet(LOCAL_IPv6_ADDR, i))
     # 加上所有活跃的clients
-    # ip_list.extend(get_alive_clients())
+    ip_list.extend(get_alive_clients())
 
     # 测试对面子网的inbound
     for i in AVAILABLE_PREFIX:
         ip_list.append(get_local_addr_inside_subnet(dst_addr, i))
-
-    # LOCAL地址
-    ip_list.append('fc00::10')
-    # 回环
-    ip_list.append('::1')
     return ip_list
 
 
