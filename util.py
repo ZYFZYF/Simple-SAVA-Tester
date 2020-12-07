@@ -117,8 +117,10 @@ def get_path_to(dst_addr):
 # payload是dict
 def reply_udp_packet(pkt, payload: dict):
     # print(f'receive get client list request from {pkt[IPv6].src}', payload)
-    sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=pkt[IPv6].src) / UDP(sport=pkt[UDP].dport,
-                                                                  dport=pkt[UDP].sport) / json.dumps(payload),
+    sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(dst=pkt[IPv6].src) / UDP(sport=pkt[UDP].dport,
+                                                                                      dport=pkt[
+                                                                                          UDP].sport) / json.dumps(
+        payload),
           iface=LOCAL_IPv6_IFACE)
 
 
@@ -131,8 +133,8 @@ def get_alive_clients():
     if get_local_ipv6_addr() == SERVER_ADDR:
         return []
     while True:
-        sendp(Ether(dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT,
-                                                                    dport=ACCESS_CLIENT_LIST_PORT),
+        sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT,
+                                                                                        dport=ACCESS_CLIENT_LIST_PORT),
               iface=LOCAL_IPv6_IFACE)
         recv_packets = sniff(filter=f'dst host {LOCAL_IPv6_ADDR} && port {ACCESS_CLIENT_LIST_PORT}', count=1,
                              timeout=3, iface=LOCAL_IPv6_IFACE)
