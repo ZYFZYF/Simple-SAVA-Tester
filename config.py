@@ -21,6 +21,7 @@ READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我
 
 # PING_TARGETS = ['2402:f000:11:210::17', '2402:f000:0:404::5']  # Ping的路径
 PING_TARGETS = []
+AVAILABLE_PREFIX = [56, 60, 64]
 
 RUN_IP_SPOOF_TEST = True
 RUN_MAC_SPOOF_TEST = True

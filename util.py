@@ -1,3 +1,4 @@
+import ipaddress
 import json
 
 import psutil
@@ -165,6 +166,64 @@ def clear_all_data():
             do_sql(f'truncate table {table}')
 
 
+def translate_ipv6_addr_to_int(ip_addr):
+    return int(ipaddress.IPv6Address(ip_addr))
+
+
+def translate_int_to_ipv6_addr(ip_int):
+    return str(ipaddress.IPv6Address(ip_int))
+
+
+def get_local_addr_inside_subnet(ip_addr, prefix_len):
+    subnet_space = 2 ** (128 - prefix_len)
+    ip_int = translate_ipv6_addr_to_int(ip_addr)
+    gateway = ip_int - ip_int % subnet_space
+    return translate_int_to_ipv6_addr(gateway + random.randint(0, subnet_space - 1))
+
+
+def get_spoof_ips(dst_addr):
+    ip_list = []
+    # 测试本子网的outbound
+    for i in AVAILABLE_PREFIX:
+        ip_list.append(get_local_addr_inside_subnet(LOCAL_IPv6_ADDR, i))
+    # 加上所有活跃的clients
+    # ip_list.extend(get_alive_clients())
+
+    # 测试对面子网的inbound
+    for i in AVAILABLE_PREFIX:
+        ip_list.append(get_local_addr_inside_subnet(dst_addr, i))
+
+    # LOCAL地址
+    ip_list.append('fc00::10')
+    # 回环
+    ip_list.append('::1')
+    return ip_list
+
+
+def translate_mac_addr_to_int(mac_addr):
+    return int(mac_addr.replace(':', ''), 16)
+
+
+def translate_int_to_mac_addr(mac_int):
+    hex_desc = str(hex(mac_int))[2:].zfill(12)
+    return ":".join([hex_desc[e:e + 2] for e in range(0, 11, 2)])
+
+
+def get_local_mac_inside_subnet(ip_addr, prefix_len):
+    subnet_space = 2 ** (48 - prefix_len)
+    ip_int = translate_mac_addr_to_int(ip_addr)
+    gateway = ip_int - ip_int % subnet_space
+    return translate_int_to_mac_addr(gateway + random.randint(0, subnet_space - 1))
+
+
+def get_spoof_macs():
+    return [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
+
+
 if __name__ == '__main__':
-    print(get_connected_wifi_ssid())
-    print(LOCAL_IPv6_ADDR, LOCAL_IPv6_IFACE, LOCAL_MAC_ADDR, LOCAL_WLAN_SSID)
+    # print(get_spoof_ips(SERVER_ADDR))
+    print(translate_mac_addr_to_int(LOCAL_MAC_ADDR))
+
+    print(translate_int_to_mac_addr(translate_mac_addr_to_int(LOCAL_MAC_ADDR)))
+    print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
+    print(get_spoof_macs())

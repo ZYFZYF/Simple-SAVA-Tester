@@ -42,10 +42,8 @@ def send_test_to(skt, dst_addr):
     print('---------------------------------------------接受空闲端口-----------------------------------------------------')
     dst_port = recv_control_message(skt)
     print(f'prepare to send UDP packet to port {dst_port}')
-    
-    local_addr = LOCAL_IPv6_ADDR
-    forge_addr_list = get_alive_clients() + [local_addr[:-1] + '7', local_addr[:-1] + 'e', '5' + local_addr[1:],
-                                             'e' + local_addr[1:]] + [RANDOM_ADDR, SERVER_ADDR, LOCAL_IPv6_ADDR]
+
+    forge_addr_list = get_spoof_ips(dst_addr)
     if RUN_IP_SPOOF_TEST:
         print('-------------------------------------------伪造源IP地址测试---------------------------------------------------')
 
@@ -70,9 +68,7 @@ def send_test_to(skt, dst_addr):
                                   recv_spoof_num=receive_count)
             print(f'forge {forge_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
 
-    local_mac = LOCAL_MAC_ADDR
-    forge_mac_list = [local_mac[:-1] + '7', local_mac[:-1] + 'e', '5' + local_mac[1:], 'e' + local_mac[1:]] + [
-        LOCAL_MAC_ADDR]
+    forge_mac_list = get_spoof_macs()
     if RUN_MAC_SPOOF_TEST:
         print(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
