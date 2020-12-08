@@ -34,7 +34,7 @@ def send_test_to(skt, dst_addr):
     # 设置log输出文件
     log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
     if RUNNING_OS == 'windows':
-        log_path = log_path.replace(':', '|')
+        log_path = log_path.replace(':', '@')
     os.makedirs(os.path.split(log_path)[0], exist_ok=True)
     logfile = logging.FileHandler(log_path)
     logfile.setLevel(logging.DEBUG)
@@ -152,7 +152,7 @@ def receive_test_from(skt, src_addr):
     # 设置log输出文件
     log_path = f"log/{src_addr}/{LOCAL_IPv6_ADDR} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
     if RUNNING_OS == 'windows':
-        log_path = log_path.replace(':', '|')
+        log_path = log_path.replace(':', '@')
     os.makedirs(os.path.split(log_path)[0], exist_ok=True)
     logfile = logging.FileHandler(log_path)
     logfile.setLevel(logging.DEBUG)
@@ -306,7 +306,7 @@ def send_result_to_server(**data):
 def transfer_log_to_server(file_path):
     skt = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     skt.connect((SERVER_ADDR, TRANSFER_LOG_FILE_PORT))
-    send_control_message(skt, file_path if RUNNING_OS != 'windows' else file_path.replace('|', ':'))
+    send_control_message(skt, file_path if RUNNING_OS != 'windows' else file_path.replace('@', ':'))
     lines = open(file_path).readlines()
     send_control_message(skt, len(lines))
     for line in lines:
