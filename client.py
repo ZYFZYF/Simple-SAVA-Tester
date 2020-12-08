@@ -32,7 +32,8 @@ def get_unused_port():
 # 与addr进行一系列测试，自己发包，对面收
 def send_test_to(skt, dst_addr):
     # 设置log输出文件
-    log_path = f"log/{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {LOCAL_IPv6_ADDR} -> {dst_addr} send.log"
+    log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
+    os.makedirs(os.path.split(log_path)[0], exist_ok=True)
     logfile = logging.FileHandler(log_path)
     logfile.setLevel(logging.DEBUG)
     logfile.setFormatter(formatter)
@@ -147,7 +148,8 @@ def send_test_to(skt, dst_addr):
 
 def receive_test_from(skt, src_addr):
     # 设置log输出文件
-    log_path = f"log/{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {src_addr} -> {LOCAL_IPv6_ADDR} recv.log"
+    log_path = f"log/{src_addr}/{LOCAL_IPv6_ADDR} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} .log"
+    os.makedirs(os.path.split(log_path)[0], exist_ok=True)
     logfile = logging.FileHandler(log_path)
     logfile.setLevel(logging.DEBUG)
     logfile.setFormatter(formatter)
@@ -258,7 +260,6 @@ def monitor_test():
         # 交互控制信息之后开新线程来具体做测试
         def new_thread_to_test():
             print(f'start test with {client[0]}')
-            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             receive_test_from(client_socket, client[0])
             send_test_to(client_socket, client[0])
             print(f'finish test with {client[0]}')
