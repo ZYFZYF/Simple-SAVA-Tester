@@ -1,6 +1,4 @@
-from scapy.all import *
-from scapy.as_resolvers import AS_resolver_radb
-from scapy.layers.inet6 import IPv6, UDP, Ether, traceroute6, ICMPv6EchoRequest
+from util import *
 
 
 def test_send_ethernet():
@@ -51,9 +49,12 @@ def test_mac_modify():
                   'a4:83:e7:89:10:1e',
                   '74:83:e7:89:10:1d',
                   'e4:83:e7:89:10:1d',
-                  'a3:83:e7:89:10:1d']
+                  'a4:83:e7:89:10:1d']
     for mac in spoof_macs:
-        sendp(Ether(src=mac) / IPv6(dst='2001:da8:ff:212::41:23') / UDP(dport=9877), count=10, inter=0.1)
+        for i in range(100):
+            sendp(Ether(src=mac, dst=NEXT_HOP_MAC) / IPv6(dst='2001:da8:ff:212::41:23') / UDP(sport=9876, dport=9877),
+                  iface=LOCAL_IPv6_IFACE)
+            time.sleep(1)
 
 
 if __name__ == '__main__':

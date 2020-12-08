@@ -41,7 +41,8 @@ def receive_log():
         def new_thread_to_test():
             filename = recv_control_message(client_socket)
             line_num = recv_control_message(client_socket)
-            with open(f'log/{filename}', 'w') as f:
+            os.makedirs(os.path.split(filename)[0], exist_ok=True)
+            with open(f'{filename}', 'w') as f:
                 for i in range(line_num):
                     content = recv_control_message(client_socket)
                     f.writelines([content])

@@ -32,7 +32,7 @@ def get_unused_port():
 # 与addr进行一系列测试，自己发包，对面收
 def send_test_to(skt, dst_addr):
     # 设置log输出文件
-    log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
+    log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} send {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
     if RUNNING_OS == 'windows':
         log_path = log_path.replace(':', '@')
     os.makedirs(os.path.split(log_path)[0], exist_ok=True)
