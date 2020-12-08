@@ -1,7 +1,6 @@
-from datetime import datetime
-from util import *
 from ClientManager import ClientManager
 from client import monitor_test
+from util import *
 
 clientManger = ClientManager()
 clientManger.start()
@@ -29,8 +28,32 @@ def receive_result():
           prn=save_result)
 
 
+def receive_log():
+    server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    server_socket.bind((LOCAL_IPv6_ADDR, TRANSFER_LOG_FILE_PORT))
+    server_socket.listen(5)
+    print(f'start listening in {TRANSFER_LOG_FILE_PORT} for collecting results...')
+    while True:
+        client_socket, client = server_socket.accept()
+        print(f'receive log from {client[0]}:{client[1]}')
+
+        # 交互控制信息之后开新线程来具体做测试
+        def new_thread_to_test():
+            filename = recv_control_message(client_socket)
+            line_num = recv_control_message(client_socket)
+            with open(f'log/{filename}', 'w') as f:
+                for i in range(line_num):
+                    content = recv_control_message(client_socket)
+                    f.writelines([content])
+
+            client_socket.close()
+
+        threading.Thread(target=new_thread_to_test).start()
+
+
 if __name__ == '__main__':
     threading.Thread(target=receive_heart_beat).start()
     threading.Thread(target=get_alive_clients).start()
     threading.Thread(target=monitor_test).start()
     threading.Thread(target=receive_result).start()
+    threading.Thread(target=receive_log).start()

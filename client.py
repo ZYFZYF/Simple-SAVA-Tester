@@ -29,23 +29,10 @@ def get_unused_port():
     return unused_port
 
 
-# 通过TCP socket进行交互信息
-def send_control_message(skt, data):
-    send_body = json.dumps({'data': data}).encode()
-    skt.sendall(struct.pack('i', len(send_body)))
-    skt.sendall(send_body)
-
-
-def recv_control_message(skt):
-    data_len = struct.unpack('i', skt.recv(4))[0]
-    data = skt.recv(data_len).decode()
-    return json.loads(data)['data']
-
-
 # 与addr进行一系列测试，自己发包，对面收
 def send_test_to(skt, dst_addr):
     # 设置log输出文件
-    log_path = f'log/{datetime.now()} - {LOCAL_IPv6_ADDR} -> {dst_addr} send.log'
+    log_path = f"log/{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {LOCAL_IPv6_ADDR} -> {dst_addr} send.log"
     logfile = logging.FileHandler(log_path)
     logfile.setLevel(logging.DEBUG)
     logfile.setFormatter(formatter)
@@ -155,12 +142,12 @@ def send_test_to(skt, dst_addr):
                 logger.info(f'ping target is {target} and success {receive_count}/{TEST_REPEAT_COUNT}')
     # 将log文件转移到SERVER端
     logger.removeHandler(logfile)
-    transfer_file_to_server(log_path)
+    transfer_log_to_server(log_path)
 
 
 def receive_test_from(skt, src_addr):
     # 设置log输出文件
-    log_path = f'log/{datetime.now()} - {src_addr} -> {LOCAL_IPv6_ADDR} recv.log'
+    log_path = f"log/{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {src_addr} -> {LOCAL_IPv6_ADDR} recv.log"
     logfile = logging.FileHandler(log_path)
     logfile.setLevel(logging.DEBUG)
     logfile.setFormatter(formatter)
@@ -255,7 +242,7 @@ def receive_test_from(skt, src_addr):
             send_control_message(skt, recv_count_dict)
     # 将log文件转移到SERVER端
     logger.removeHandler(logfile)
-    transfer_file_to_server(log_path)
+    transfer_log_to_server(log_path)
 
 
 # 监听测试请求
@@ -311,8 +298,15 @@ def send_result_to_server(**data):
           iface=LOCAL_IPv6_IFACE)
 
 
-def transfer_file_to_server(file_path):
-    pass
+def transfer_log_to_server(file_path):
+    skt = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    skt.connect((SERVER_ADDR, TRANSFER_LOG_FILE_PORT))
+    send_control_message(skt, os.path.split(file_path)[1])
+    lines = open(file_path).readlines()
+    send_control_message(skt, len(lines))
+    for line in lines:
+        send_control_message(skt, line)
+    skt.close()
 
 
 if __name__ == '__main__':

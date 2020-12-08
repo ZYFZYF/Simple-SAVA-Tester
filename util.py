@@ -247,6 +247,19 @@ def get_spoof_macs():
     return [LOCAL_MAC_ADDR, RANDOM_MAC] + [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
 
 
+# 通过TCP socket进行交互信息
+def send_control_message(skt, data):
+    send_body = json.dumps({'data': data}).encode()
+    skt.sendall(struct.pack('i', len(send_body)))
+    skt.sendall(send_body)
+
+
+def recv_control_message(skt):
+    data_len = struct.unpack('i', skt.recv(4))[0]
+    data = skt.recv(data_len).decode()
+    return json.loads(data)['data']
+
+
 if __name__ == '__main__':
     # print(get_spoof_ips(SERVER_ADDR))
     # print(translate_mac_addr_to_int(LOCAL_MAC_ADDR))
