@@ -38,6 +38,11 @@ def send_test_to(skt, dst_addr):
     def recv_ready_signal():
         while recv_control_message(skt) != READY_MESSAGE:
             pass
+        print('time to send...')
+
+    def send_finish_signal():
+        send_control_message(skt, FINISH_MESSAGE)
+        print('send has finished...')
 
     print('---------------------------------------------接受空闲端口-----------------------------------------------------')
     dst_port = recv_control_message(skt)
@@ -56,6 +61,7 @@ def send_test_to(skt, dst_addr):
                     sport=SEND_UDP_PORT, dport=dst_port) / json.dumps({'data': forge_addr}), iface=LOCAL_IPv6_IFACE)
         print(
             f'send {TEST_REPEAT_COUNT * len(forge_addr_list)} packets and cost {int(time.time() - start_time)} seconds')
+        send_finish_signal()
         recv_count_dict = recv_control_message(skt)
         for forge_addr, receive_count in recv_count_dict.items():
             send_result_to_server(ssid=LOCAL_WLAN_SSID,
@@ -83,6 +89,7 @@ def send_test_to(skt, dst_addr):
                     {'data': forge_mac}), iface=LOCAL_IPv6_IFACE)
         print(
             f'send {TEST_REPEAT_COUNT * len(forge_mac_list)} packets and cost {int(time.time() - start_time)} seconds')
+        send_finish_signal()
         recv_count_dict = recv_control_message(skt)
         for forge_mac, receive_count in recv_count_dict.items():
             send_result_to_server(ssid=LOCAL_WLAN_SSID,
@@ -107,11 +114,15 @@ def send_test_to(skt, dst_addr):
             send_control_message(skt, targets)
             print(f'in {i} path, we have {len(targets)} target to ping')
             recv_ready_signal()
+            start_time = time.time()
             for j in range(TEST_REPEAT_COUNT):
                 for target in targets:
                     sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(src=dst_addr,
                                                                              dst=target) / ICMPv6EchoRequest(),
                           iface=LOCAL_IPv6_IFACE)
+            print(
+                f'send {TEST_REPEAT_COUNT * len(targets)} packets and cost {int(time.time() - start_time)} seconds')
+            send_finish_signal()
             recv_count_dict = recv_control_message(skt)
             for target, receive_count in recv_count_dict.items():
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
@@ -129,6 +140,12 @@ def send_test_to(skt, dst_addr):
 def receive_test_from(skt, src_addr):
     def send_ready_signal():
         send_control_message(skt, READY_MESSAGE)
+        print('ready to sniff...')
+
+    def recv_finish_signal():
+        while recv_control_message(skt) != FINISH_MESSAGE:
+            pass
+        print('time to end sniff...')
 
     print(f'-------------------------------------------发送空闲端口------------------------------------------------------')
     dst_port = get_unused_port()
@@ -148,8 +165,12 @@ def receive_test_from(skt, src_addr):
             else:
                 print('Bazinga! Look at what you received!')
 
-        sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE, timeout=TEST_TIMEOUT_SECONDS,
-              started_callback=send_ready_signal, prn=count_recv_spoof_ip_pkt)
+        sniffer = AsyncSniffer(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
+                               started_callback=send_ready_signal, prn=count_recv_spoof_ip_pkt)
+        sniffer.start()
+        recv_finish_signal()
+        time.sleep(TEST_WAIT_SECONDS)
+        sniffer.stop()
         for forge_addr, receive_count in recv_count_dict.items():
             print(f'receive {receive_count} packets from {forge_addr}')
         send_control_message(skt, recv_count_dict)
@@ -168,8 +189,12 @@ def receive_test_from(skt, src_addr):
             else:
                 print('Bazinga! Look at what you received!')
 
-        sniff(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE, timeout=TEST_TIMEOUT_SECONDS,
-              started_callback=send_ready_signal, prn=count_recv_spoof_mac_pkt)
+        sniffer = AsyncSniffer(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
+                               started_callback=send_ready_signal, prn=count_recv_spoof_mac_pkt)
+        sniffer.start()
+        recv_finish_signal()
+        time.sleep(TEST_WAIT_SECONDS)
+        sniffer.stop()
         for forge_mac, receive_count in recv_count_dict.items():
             print(f'receive {receive_count} packets from {forge_mac}')
         send_control_message(skt, recv_count_dict)
@@ -188,8 +213,12 @@ def receive_test_from(skt, src_addr):
                 if pkt[IPv6].src in recv_count_dict.keys():
                     recv_count_dict[pkt[IPv6].src] += 1
 
-            sniff(filter=f'dst host {LOCAL_IPv6_ADDR} && icmp6 && ip6[40] == 129', iface=LOCAL_IPv6_IFACE,
-                  timeout=TEST_TIMEOUT_SECONDS, started_callback=send_ready_signal, prn=count_recv_icmp_pkt)
+            sniffer = AsyncSniffer(filter=f'dst host {LOCAL_IPv6_ADDR} && icmp6 && ip6[40] == 129',
+                                   iface=LOCAL_IPv6_IFACE, started_callback=send_ready_signal, prn=count_recv_icmp_pkt)
+            sniffer.start()
+            recv_finish_signal()
+            time.sleep(TEST_WAIT_SECONDS)
+            sniffer.stop()
             for ping_target, receive_count in recv_count_dict.items():
                 print(f'receive {receive_count} ping reply from {ping_target}')
 

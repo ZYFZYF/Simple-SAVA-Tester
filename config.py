@@ -15,9 +15,10 @@ MONITOR_TCP_PORT = 15004  # client监听该端口来建立TCP连接与其他clie
 FIRST_UNUSED_PORT = 15005  # 分配给做测试用
 
 TEST_REPEAT_COUNT = 100  # 每个测试包发送次数
-TEST_TIMEOUT_SECONDS = 15  # 每个测试等待时间
+TEST_WAIT_SECONDS = 3  # 每个测试等待时间，从发送完最后一个包到开始统计的时间，所以相对可以较短
 
 READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我准备好了
+FINISH_MESSAGE = 'FINISH'  # 发送数据包之后告诉对面，你可以结束嗅探了
 
 # PING_TARGETS = ['2402:f000:11:210::17', '2402:f000:0:404::5']  # Ping的路径
 PING_TARGETS = []

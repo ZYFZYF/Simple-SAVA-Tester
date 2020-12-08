@@ -140,7 +140,7 @@ def get_alive_clients():
                              timeout=3, iface=LOCAL_IPv6_IFACE)
         if len(recv_packets) > 0:
             clients = parse_payload(recv_packets[0])
-            return [client for client in clients if client != get_local_ipv6_addr()]
+            return [client for client in clients if client != LOCAL_IPv6_ADDR]
         else:
             print(f'server is sleeping?')
 
@@ -214,7 +214,7 @@ def get_local_addr_inside_subnet(ip_addr, prefix_len):
 
 
 def get_spoof_ips(dst_addr):
-    ip_list = [RANDOM_ADDR]
+    ip_list = [LOCAL_IPv6_ADDR, RANDOM_ADDR]
     # 测试本子网的outbound
     for i in AVAILABLE_PREFIX:
         ip_list.append(get_local_addr_inside_subnet(LOCAL_IPv6_ADDR, i))
@@ -244,7 +244,7 @@ def get_local_mac_inside_subnet(ip_addr, prefix_len):
 
 
 def get_spoof_macs():
-    return [RANDOM_MAC] + [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
+    return [LOCAL_MAC_ADDR, RANDOM_MAC] + [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
 
 
 if __name__ == '__main__':
