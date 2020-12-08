@@ -1,6 +1,15 @@
 from util import *
 
 conf.verb = 0
+# 全局的logger
+formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s : %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# 输出到屏幕上
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+logger.addHandler(console)
 
 
 def send_heart_beat():
@@ -35,22 +44,31 @@ def recv_control_message(skt):
 
 # 与addr进行一系列测试，自己发包，对面收
 def send_test_to(skt, dst_addr):
+    # 设置log输出文件
+    log_path = f'log/{datetime.now()} - {LOCAL_IPv6_ADDR} -> {dst_addr} send.log'
+    logfile = logging.FileHandler(log_path)
+    logfile.setLevel(logging.DEBUG)
+    logfile.setFormatter(formatter)
+    logger.addHandler(logfile)
+
     def recv_ready_signal():
         while recv_control_message(skt) != READY_MESSAGE:
             pass
-        print('time to send...')
+        logger.info('time to send...')
 
     def send_finish_signal():
         send_control_message(skt, FINISH_MESSAGE)
-        print('send has finished...')
+        logger.info('send has finished...')
 
-    print('---------------------------------------------接受空闲端口-----------------------------------------------------')
+    logger.info(
+        '---------------------------------------------接受空闲端口-----------------------------------------------------')
     dst_port = recv_control_message(skt)
-    print(f'prepare to send UDP packet to port {dst_port}')
+    logger.info(f'prepare to send UDP packet to port {dst_port}')
 
     forge_addr_list = get_spoof_ips(dst_addr)
     if RUN_IP_SPOOF_TEST:
-        print('-------------------------------------------伪造源IP地址测试---------------------------------------------------')
+        logger.info(
+            '-------------------------------------------伪造源IP地址测试---------------------------------------------------')
 
         send_control_message(skt, forge_addr_list)
         recv_ready_signal()
@@ -59,7 +77,7 @@ def send_test_to(skt, dst_addr):
             for forge_addr in forge_addr_list:
                 sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(src=forge_addr, dst=dst_addr) / UDP(
                     sport=SEND_UDP_PORT, dport=dst_port) / json.dumps({'data': forge_addr}), iface=LOCAL_IPv6_IFACE)
-        print(
+        logger.info(
             f'send {TEST_REPEAT_COUNT * len(forge_addr_list)} packets and cost {int(time.time() - start_time)} seconds')
         send_finish_signal()
         recv_count_dict = recv_control_message(skt)
@@ -72,11 +90,11 @@ def send_test_to(skt, dst_addr):
                                   spoof_ip=forge_addr,
                                   send_spoof_num=TEST_REPEAT_COUNT,
                                   recv_spoof_num=receive_count)
-            print(f'forge {forge_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+            logger.info(f'forge {forge_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
 
     forge_mac_list = get_spoof_macs()
     if RUN_MAC_SPOOF_TEST:
-        print(
+        logger.info(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
         # RANDOM_MAC]
         send_control_message(skt, forge_mac_list)
@@ -87,7 +105,7 @@ def send_test_to(skt, dst_addr):
                 sendp(Ether(src=forge_mac, dst=NEXT_HOP_MAC) / IPv6(dst=dst_addr) / UDP(sport=SEND_UDP_PORT,
                                                                                         dport=dst_port) / json.dumps(
                     {'data': forge_mac}), iface=LOCAL_IPv6_IFACE)
-        print(
+        logger.info(
             f'send {TEST_REPEAT_COUNT * len(forge_mac_list)} packets and cost {int(time.time() - start_time)} seconds')
         send_finish_signal()
         recv_count_dict = recv_control_message(skt)
@@ -100,19 +118,19 @@ def send_test_to(skt, dst_addr):
                                   spoof_mac=forge_mac,
                                   send_spoof_num=TEST_REPEAT_COUNT,
                                   recv_spoof_num=receive_count)
-            print(f'forge {forge_mac} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+            logger.info(f'forge {forge_mac} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
 
     if RUN_ICMP_SPOOF_TEST:
-        print(
+        logger.info(
             f'------------------------------------------伪造PING测试----------------------------------------------------')
         ping_targets = PING_TARGETS + [dst_addr]
-        print(f'there are {len(ping_targets)} paths to localize')
+        logger.info(f'there are {len(ping_targets)} paths to localize')
         send_control_message(skt, len(ping_targets))
         for i, ping_target in enumerate(ping_targets):
             path = get_path_to(ping_target)
             targets = [target for target in path[1:] if target != dst_addr]
             send_control_message(skt, targets)
-            print(f'in {i} path, we have {len(targets)} target to ping')
+            logger.info(f'in {i} path, we have {len(targets)} target to ping')
             recv_ready_signal()
             start_time = time.time()
             for j in range(TEST_REPEAT_COUNT):
@@ -120,7 +138,7 @@ def send_test_to(skt, dst_addr):
                     sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(src=dst_addr,
                                                                              dst=target) / ICMPv6EchoRequest(),
                           iface=LOCAL_IPv6_IFACE)
-            print(
+            logger.info(
                 f'send {TEST_REPEAT_COUNT * len(targets)} packets and cost {int(time.time() - start_time)} seconds')
             send_finish_signal()
             recv_count_dict = recv_control_message(skt)
@@ -134,28 +152,40 @@ def send_test_to(skt, dst_addr):
                                       path=','.join(path),
                                       send_spoof_num=TEST_REPEAT_COUNT,
                                       recv_spoof_num=receive_count)
-                print(f'ping target is {target} and success {receive_count}/{TEST_REPEAT_COUNT}')
+                logger.info(f'ping target is {target} and success {receive_count}/{TEST_REPEAT_COUNT}')
+    # 将log文件转移到SERVER端
+    logger.removeHandler(logfile)
+    transfer_file_to_server(log_path)
 
 
 def receive_test_from(skt, src_addr):
+    # 设置log输出文件
+    log_path = f'log/{datetime.now()} - {src_addr} -> {LOCAL_IPv6_ADDR} recv.log'
+    logfile = logging.FileHandler(log_path)
+    logfile.setLevel(logging.DEBUG)
+    logfile.setFormatter(formatter)
+    logger.addHandler(logfile)
+
     def send_ready_signal():
         send_control_message(skt, READY_MESSAGE)
-        print('ready to sniff...')
+        logger.info('ready to sniff...')
 
     def recv_finish_signal():
         while recv_control_message(skt) != FINISH_MESSAGE:
             pass
-        print('time to end sniff...')
+        logger.info('time to end sniff...')
 
-    print(f'-------------------------------------------发送空闲端口------------------------------------------------------')
+    logger.info(
+        f'-------------------------------------------发送空闲端口------------------------------------------------------')
     dst_port = get_unused_port()
-    print(f'get a free port {dst_port}')
+    logger.info(f'get a free port {dst_port}')
     send_control_message(skt, dst_port)
 
     if RUN_IP_SPOOF_TEST:
-        print(f'-----------------------------------------伪造源IP地址测试----------------------------------------------------')
+        logger.info(
+            f'-----------------------------------------伪造源IP地址测试----------------------------------------------------')
         forge_addr_list = recv_control_message(skt)
-        print(f'get forge addr list = {forge_addr_list}')
+        logger.info(f'get forge addr list = {forge_addr_list}')
         recv_count_dict = {forge_addr: 0 for forge_addr in forge_addr_list}
 
         def count_recv_spoof_ip_pkt(pkt):
@@ -163,7 +193,7 @@ def receive_test_from(skt, src_addr):
             if forge_addr in forge_addr_list:
                 recv_count_dict[forge_addr] += 1
             else:
-                print('Bazinga! Look at what you received!')
+                logger.info('Bazinga! Look at what you received!')
 
         sniffer = AsyncSniffer(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
                                started_callback=send_ready_signal, prn=count_recv_spoof_ip_pkt)
@@ -172,14 +202,14 @@ def receive_test_from(skt, src_addr):
         time.sleep(TEST_WAIT_SECONDS)
         sniffer.stop()
         for forge_addr, receive_count in recv_count_dict.items():
-            print(f'receive {receive_count} packets from {forge_addr}')
+            logger.info(f'receive {receive_count} packets from {forge_addr}')
         send_control_message(skt, recv_count_dict)
 
     if RUN_MAC_SPOOF_TEST:
-        print(
+        logger.info(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
         forge_mac_list = recv_control_message(skt)
-        print(f'get forge mac list = {forge_mac_list}')
+        logger.info(f'get forge mac list = {forge_mac_list}')
         recv_count_dict = {forge_mac: 0 for forge_mac in forge_mac_list}
 
         def count_recv_spoof_mac_pkt(pkt):
@@ -187,7 +217,7 @@ def receive_test_from(skt, src_addr):
             if forge_mac in forge_mac_list:
                 recv_count_dict[forge_mac] += 1
             else:
-                print('Bazinga! Look at what you received!')
+                logger.info('Bazinga! Look at what you received!')
 
         sniffer = AsyncSniffer(filter=f'dst port {dst_port}', iface=LOCAL_IPv6_IFACE,
                                started_callback=send_ready_signal, prn=count_recv_spoof_mac_pkt)
@@ -196,17 +226,17 @@ def receive_test_from(skt, src_addr):
         time.sleep(TEST_WAIT_SECONDS)
         sniffer.stop()
         for forge_mac, receive_count in recv_count_dict.items():
-            print(f'receive {receive_count} packets from {forge_mac}')
+            logger.info(f'receive {receive_count} packets from {forge_mac}')
         send_control_message(skt, recv_count_dict)
 
     if RUN_ICMP_SPOOF_TEST:
-        print(
+        logger.info(
             f'------------------------------------------伪造PING测试----------------------------------------------------')
         path_count = recv_control_message(skt)
-        print(f'get path count is {path_count}')
+        logger.info(f'get path count is {path_count}')
         for i in range(path_count):
             ping_targets = recv_control_message(skt)
-            print(f'{i}: need to ping {ping_targets}')
+            logger.info(f'{i}: need to ping {ping_targets}')
             recv_count_dict = {target: 0 for target in ping_targets}
 
             def count_recv_icmp_pkt(pkt):
@@ -220,9 +250,12 @@ def receive_test_from(skt, src_addr):
             time.sleep(TEST_WAIT_SECONDS)
             sniffer.stop()
             for ping_target, receive_count in recv_count_dict.items():
-                print(f'receive {receive_count} ping reply from {ping_target}')
+                logger.info(f'receive {receive_count} ping reply from {ping_target}')
 
             send_control_message(skt, recv_count_dict)
+    # 将log文件转移到SERVER端
+    logger.removeHandler(logfile)
+    transfer_file_to_server(log_path)
 
 
 # 监听测试请求
@@ -238,6 +271,7 @@ def monitor_test():
         # 交互控制信息之后开新线程来具体做测试
         def new_thread_to_test():
             print(f'start test with {client[0]}')
+            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             receive_test_from(client_socket, client[0])
             send_test_to(client_socket, client[0])
             print(f'finish test with {client[0]}')
@@ -275,6 +309,10 @@ def send_result_to_server(**data):
                                                                                     dport=RECEIVE_RESULT_PORT) / json.dumps(
         {'data': data}),
           iface=LOCAL_IPv6_IFACE)
+
+
+def transfer_file_to_server(file_path):
+    pass
 
 
 if __name__ == '__main__':

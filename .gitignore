@@ -131,3 +131,4 @@ dmypy.json
 result/
 tmp/
 client.zip
+log/
