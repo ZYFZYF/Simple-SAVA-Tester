@@ -61,7 +61,9 @@ def send_test_to(skt, dst_addr):
             '-------------------------------------------伪造源IP地址测试---------------------------------------------------')
 
         send_control_message(skt, forge_addr_list)
+        print(f'ready to forge {forge_addr_list}')
         recv_ready_signal()
+        print(f'ready to forge {forge_addr_list}')
         start_time = time.time()
         for i in range(TEST_REPEAT_COUNT):
             for forge_addr in forge_addr_list:
