@@ -174,12 +174,12 @@ def receive_test_from(skt, src_addr):
 
     def send_ready_signal():
         send_control_message(skt, READY_MESSAGE)
-        logger.info('ready to sniff...')
+        # logger.info('ready to sniff...')
 
     def recv_finish_signal():
         while recv_control_message(skt) != FINISH_MESSAGE:
             pass
-        logger.info('time to end sniff...')
+        # logger.info('time to end sniff...')
 
     # logger.info(
     #     f'-------------------------------------------发送空闲端口------------------------------------------------------')
@@ -289,13 +289,16 @@ def main():
     # 先与对端获得对方的可用端口，再进行收发测试
     def do_test_with(addr):
         try:
-            print(f'start test with {addr}')
+            print(
+                f'-------------------------------  开始与{addr}的测试  -----------------------------------------')
             skt = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
             skt.connect((addr, MONITOR_TCP_PORT))
             send_test_to(skt, addr)
             receive_test_from(skt, addr)
             skt.close()
-            print(f'finish test with {addr}')
+            print(
+                f'-------------------------------  结束与{addr}的测试  -----------------------------------------')
+
         except Exception as e:
             print(f'ERROR: {e}')
 
@@ -303,13 +306,13 @@ def main():
         running_tests = set([SERVER_ADDR] + get_alive_clients())
     else:
         running_tests = {SERVER_ADDR}
-    print(f'local addr is {LOCAL_IPv6_ADDR}')
-    print(f'alive clients are {get_alive_clients()}')
-    print(f'running test are {running_tests}')
+    # print(f'local addr is {LOCAL_IPv6_ADDR}')
+    # print(f'alive clients are {get_alive_clients()}')
+    # print(f'running test are {running_tests}')
     for addr in running_tests:
         do_test_with(addr)
-    print(f'finish all tests!')
-    monitor_test()
+    print('------------------------------------------  所有测试结束  ----------------------------------------------------')
+    # monitor_test()
 
 
 def send_result_to_server(**data):
@@ -330,5 +333,5 @@ def transfer_log_to_server(file_path):
 
 
 if __name__ == '__main__':
-    threading.Thread(target=send_heart_beat).start()
+    # threading.Thread(target=send_heart_beat).start()
     threading.Thread(target=main).start()

@@ -77,7 +77,7 @@ def get_next_hop_mac():
 
     system_ping_pkt = sniff(filter=f'icmp6 && dst host {DNS_ADDR}', count=1, iface=get_ipv6_iface(),
                             started_callback=send_system_ping_pkt_thread)
-    print(f'get the mac address of next hop is {system_ping_pkt[0].dst}')
+    # print(f'get the mac address of next hop is {system_ping_pkt[0].dst}')
     return system_ping_pkt[0].dst
 
 
