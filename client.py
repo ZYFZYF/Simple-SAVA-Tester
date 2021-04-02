@@ -33,7 +33,7 @@ def get_unused_port():
 def send_test_to(skt, dst_addr):
     # 设置log输出文件
     # log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} send {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
-    log_path = f"log/{datetime.now().strftime('%Y-%m-%d')}/{LOCAL_WLAN_SSID}/{datetime.now().strftime('%H:%M:%S')}-{LOCAL_IPv6_ADDR}-{dst_addr}.log"
+    log_path = f"log/{datetime.now().strftime('%Y-%m-%d')}/{RUNNING_OS}/{LOCAL_WLAN_SSID}/{datetime.now().strftime('%H:%M:%S')}-{LOCAL_IPv6_ADDR}-{dst_addr}.log"
     if RUNNING_OS == 'windows':
         log_path = log_path.replace(':', '@')
     os.makedirs(os.path.split(log_path)[0], exist_ok=True)
@@ -77,6 +77,7 @@ def send_test_to(skt, dst_addr):
         for forge_addr, receive_count in recv_count_dict.items():
             if forge_addr != LOCAL_IPv6_ADDR:
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                      os=RUNNING_OS,
                                       type='IP_in_UDP',
                                       src_ip=LOCAL_IPv6_ADDR,
                                       src_mac=LOCAL_MAC_ADDR,
@@ -109,6 +110,7 @@ def send_test_to(skt, dst_addr):
         for forge_mac, receive_count in recv_count_dict.items():
             if forge_mac != LOCAL_MAC_ADDR:
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                      os=RUNNING_OS,
                                       type='MAC_in_UDP',
                                       src_ip=LOCAL_IPv6_ADDR,
                                       src_mac=LOCAL_MAC_ADDR,

@@ -274,4 +274,5 @@ if __name__ == '__main__':
     # print(icmp_traceroute6(SERVER_ADDR))
     # print(get_local_mac_addr())
     # print(get_connected_wifi_ssid())
+    print(get_running_os())
     clear_all_data()
