@@ -224,6 +224,7 @@ def get_spoof_ips(dst_addr):
     # 测试对面子网的inbound
     for i in AVAILABLE_PREFIX:
         ip_list.append(get_local_addr_inside_subnet(dst_addr, i))
+    ip_list.append(dst_addr)
     return ip_list
 
 
@@ -271,3 +272,5 @@ if __name__ == '__main__':
     print(get_next_hop_mac())
     # print(get_path_to(SERVER_ADDR))
     print(icmp_traceroute6(SERVER_ADDR))
+    print(get_local_mac_addr())
+    print(get_connected_wifi_ssid())

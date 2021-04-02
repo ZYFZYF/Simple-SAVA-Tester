@@ -32,7 +32,8 @@ def get_unused_port():
 # 与addr进行一系列测试，自己发包，对面收
 def send_test_to(skt, dst_addr):
     # 设置log输出文件
-    log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} send {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
+    # log_path = f"log/{LOCAL_IPv6_ADDR}/{dst_addr} send {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
+    log_path = f"log/{datetime.now().strftime('%Y-%m-%d')}/{LOCAL_WLAN_SSID}/{datetime.now().strftime('%H:%M:%S')}-{LOCAL_IPv6_ADDR}-{dst_addr}.log"
     if RUNNING_OS == 'windows':
         log_path = log_path.replace(':', '@')
     os.makedirs(os.path.split(log_path)[0], exist_ok=True)
@@ -44,16 +45,16 @@ def send_test_to(skt, dst_addr):
     def recv_ready_signal():
         while recv_control_message(skt) != READY_MESSAGE:
             pass
-        logger.info('time to send...')
+        # logger.info('time to send...')
 
     def send_finish_signal():
         send_control_message(skt, FINISH_MESSAGE)
-        logger.info('send has finished...')
+        # logger.info('send has finished...')
 
-    logger.info(
-        '---------------------------------------------接受空闲端口-----------------------------------------------------')
+    # logger.info(
+    #     '---------------------------------------------接受空闲端口-----------------------------------------------------')
     dst_port = recv_control_message(skt)
-    logger.info(f'prepare to send UDP packet to port {dst_port}')
+    # logger.info(f'prepare to send UDP packet to port {dst_port}')
 
     forge_addr_list = get_spoof_ips(dst_addr)
     if RUN_IP_SPOOF_TEST:
@@ -74,15 +75,19 @@ def send_test_to(skt, dst_addr):
         send_finish_signal()
         recv_count_dict = recv_control_message(skt)
         for forge_addr, receive_count in recv_count_dict.items():
-            send_result_to_server(ssid=LOCAL_WLAN_SSID,
-                                  type='IP_in_UDP',
-                                  src_ip=LOCAL_IPv6_ADDR,
-                                  src_mac=LOCAL_MAC_ADDR,
-                                  dst_ip=dst_addr,
-                                  spoof_ip=forge_addr,
-                                  send_spoof_num=TEST_REPEAT_COUNT,
-                                  recv_spoof_num=receive_count)
-            logger.info(f'forge {forge_addr} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+            if forge_addr != LOCAL_IPv6_ADDR:
+                send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                      type='IP_in_UDP',
+                                      src_ip=LOCAL_IPv6_ADDR,
+                                      src_mac=LOCAL_MAC_ADDR,
+                                      dst_ip=dst_addr,
+                                      spoof_ip=forge_addr,
+                                      send_spoof_num=TEST_REPEAT_COUNT,
+                                      recv_spoof_num=receive_count,
+                                      send_normal_num=TEST_REPEAT_COUNT,
+                                      recv_normal_num=recv_count_dict[LOCAL_IPv6_ADDR])
+            logger.info(
+                f'{"forge":<10} {forge_addr:<40} {"to":<7} {dst_addr:<30} success {receive_count:<3}/{TEST_REPEAT_COUNT:<3}')
 
     forge_mac_list = get_spoof_macs()
     if RUN_MAC_SPOOF_TEST:
@@ -102,15 +107,19 @@ def send_test_to(skt, dst_addr):
         send_finish_signal()
         recv_count_dict = recv_control_message(skt)
         for forge_mac, receive_count in recv_count_dict.items():
-            send_result_to_server(ssid=LOCAL_WLAN_SSID,
-                                  type='MAC_in_UDP',
-                                  src_ip=LOCAL_IPv6_ADDR,
-                                  src_mac=LOCAL_MAC_ADDR,
-                                  dst_ip=dst_addr,
-                                  spoof_mac=forge_mac,
-                                  send_spoof_num=TEST_REPEAT_COUNT,
-                                  recv_spoof_num=receive_count)
-            logger.info(f'forge {forge_mac} to {dst_addr} success {receive_count}/{TEST_REPEAT_COUNT}')
+            if forge_mac != LOCAL_MAC_ADDR:
+                send_result_to_server(ssid=LOCAL_WLAN_SSID,
+                                      type='MAC_in_UDP',
+                                      src_ip=LOCAL_IPv6_ADDR,
+                                      src_mac=LOCAL_MAC_ADDR,
+                                      dst_ip=dst_addr,
+                                      spoof_mac=forge_mac,
+                                      send_spoof_num=TEST_REPEAT_COUNT,
+                                      recv_spoof_num=receive_count,
+                                      send_normal_num=TEST_REPEAT_COUNT,
+                                      recv_normal_num=recv_count_dict[LOCAL_MAC_ADDR])
+            logger.info(
+                f'{"forge":<10} {forge_mac:<25} {"to":<7} {dst_addr:<30} success {receive_count:>3}/{TEST_REPEAT_COUNT:<3}')
 
     if RUN_ICMP_SPOOF_TEST:
         logger.info(
@@ -152,14 +161,14 @@ def send_test_to(skt, dst_addr):
 
 def receive_test_from(skt, src_addr):
     # 设置log输出文件
-    log_path = f"log/{src_addr}/{LOCAL_IPv6_ADDR} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
-    if RUNNING_OS == 'windows':
-        log_path = log_path.replace(':', '@')
-    os.makedirs(os.path.split(log_path)[0], exist_ok=True)
-    logfile = logging.FileHandler(log_path)
-    logfile.setLevel(logging.DEBUG)
-    logfile.setFormatter(formatter)
-    logger.addHandler(logfile)
+    # log_path = f"log/{src_addr}/{LOCAL_IPv6_ADDR} recv {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log"
+    # if RUNNING_OS == 'windows':
+    #     log_path = log_path.replace(':', '@')
+    # os.makedirs(os.path.split(log_path)[0], exist_ok=True)
+    # logfile = logging.FileHandler(log_path)
+    # logfile.setLevel(logging.DEBUG)
+    # logfile.setFormatter(formatter)
+    # logger.addHandler(logfile)
 
     def send_ready_signal():
         send_control_message(skt, READY_MESSAGE)
@@ -170,10 +179,10 @@ def receive_test_from(skt, src_addr):
             pass
         logger.info('time to end sniff...')
 
-    logger.info(
-        f'-------------------------------------------发送空闲端口------------------------------------------------------')
+    # logger.info(
+    #     f'-------------------------------------------发送空闲端口------------------------------------------------------')
     dst_port = get_unused_port()
-    logger.info(f'get a free port {dst_port}')
+    # logger.info(f'get a free port {dst_port}')
     send_control_message(skt, dst_port)
 
     if RUN_IP_SPOOF_TEST:
@@ -249,8 +258,8 @@ def receive_test_from(skt, src_addr):
 
             send_control_message(skt, recv_count_dict)
     # 将log文件转移到SERVER端
-    logger.removeHandler(logfile)
-    transfer_log_to_server(log_path)
+    # logger.removeHandler(logfile)
+    # transfer_log_to_server(log_path)
 
 
 # 监听测试请求
@@ -288,7 +297,10 @@ def main():
         except Exception as e:
             print(f'ERROR: {e}')
 
-    running_tests = set([SERVER_ADDR] + get_alive_clients())
+    if RUN_TEST_WITH_OTHER_CLIENTS:
+        running_tests = set([SERVER_ADDR] + get_alive_clients())
+    else:
+        running_tests = {SERVER_ADDR}
     print(f'local addr is {LOCAL_IPv6_ADDR}')
     print(f'alive clients are {get_alive_clients()}')
     print(f'running test are {running_tests}')
@@ -301,8 +313,7 @@ def main():
 def send_result_to_server(**data):
     sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=SEND_UDP_PORT,
                                                                                     dport=RECEIVE_RESULT_PORT) / json.dumps(
-        {'data': data}),
-          iface=LOCAL_IPv6_IFACE)
+        {'data': data}), iface=LOCAL_IPv6_IFACE)
 
 
 def transfer_log_to_server(file_path):
