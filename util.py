@@ -50,11 +50,10 @@ def get_connected_wifi_ssid():
     if RUNNING_OS == 'linux':
         pass
     if RUNNING_OS == 'windows':
-        ret = subprocess.run(
-            "netsh wlan show interfaces | awk -F' SSID '  '/ SSID / {print $2}'",
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output = ret.stdout.decode().replace(':', '').strip()
-        return output
+        ret = subprocess.run("netsh wlan show interfaces",
+                             shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = re.search(r'SSID(.*?)BSSID', str(ret.stdout), re.M | re.I).group(1)
+        return output.replace('\\r', '').replace('\\n', '').replace(':', '').strip()
     return 'UNKNOWN'
 
 
@@ -193,9 +192,13 @@ def insert_into(table_name, values):
 
 def clear_all_data():
     for table in ['IP_in_UDP', 'MAC_in_UDP', 'IP_in_ICMP']:
-        os.remove(f'result/{table}.csv')
-        if SAVE_TO_DATABASE:
-            do_sql(f'truncate table {table}')
+        file = f'result/{table}.csv'
+        if os.path.exists(file):
+            os.remove(file)
+            if SAVE_TO_DATABASE:
+                do_sql(f'truncate table {table}')
+    import shutil
+    shutil.rmtree('log')
 
 
 def translate_ipv6_addr_to_int(ip_addr):
@@ -267,12 +270,7 @@ if __name__ == '__main__':
     #
     # print(translate_int_to_mac_addr(translate_mac_addr_to_int(LOCAL_MAC_ADDR)))
     # print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
-    # print(get_spoof_macs())
-    # print(get_alive_clients())
-    # print(get_next_hop_mac())
-    # print(get_path_to(SERVER_ADDR))
-    # print(icmp_traceroute6(SERVER_ADDR))
-    # print(get_local_mac_addr())
+    # g
     # print(get_connected_wifi_ssid())
-    print(get_running_os())
+    # print(get_running_os())
     clear_all_data()

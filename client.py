@@ -37,7 +37,7 @@ def send_test_to(skt, dst_addr):
     if RUNNING_OS == 'windows':
         log_path = log_path.replace(':', '@')
     os.makedirs(os.path.split(log_path)[0], exist_ok=True)
-    logfile = logging.FileHandler(log_path)
+    logfile = logging.FileHandler(log_path, encoding='utf-8')
     logfile.setLevel(logging.DEBUG)
     logfile.setFormatter(formatter)
     logger.addHandler(logfile)
@@ -64,7 +64,6 @@ def send_test_to(skt, dst_addr):
         send_control_message(skt, forge_addr_list)
         print(f'ready to forge {forge_addr_list}')
         recv_ready_signal()
-        print(f'ready to forge {forge_addr_list}')
         start_time = time.time()
         for i in range(TEST_REPEAT_COUNT):
             for forge_addr in forge_addr_list:
@@ -96,6 +95,8 @@ def send_test_to(skt, dst_addr):
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
         # RANDOM_MAC]
         send_control_message(skt, forge_mac_list)
+        print(f'ready to forge {forge_mac_list}')
+
         recv_ready_signal()
         start_time = time.time()
         for i in range(TEST_REPEAT_COUNT):
@@ -325,7 +326,7 @@ def transfer_log_to_server(file_path):
     skt = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     skt.connect((SERVER_ADDR, TRANSFER_LOG_FILE_PORT))
     send_control_message(skt, file_path if RUNNING_OS != 'windows' else file_path.replace('@', ':'))
-    lines = open(file_path).readlines()
+    lines = open(file_path, encoding='utf-8').readlines()
     send_control_message(skt, len(lines))
     for line in lines:
         send_control_message(skt, line)
