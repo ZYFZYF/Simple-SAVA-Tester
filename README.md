@@ -13,6 +13,6 @@
  - 执行 pip install -r requirements.txt 之后执行 sudo python3 client.py即可
  
 ## 一些额外说明
- - 整个过程可能会持续几分钟
- - 看到finish all tests说明测试完成
+ - 整个过程可能会持续几分钟（也可能很快）
+ - 输出 所有测试结束 说明测试完成
  
