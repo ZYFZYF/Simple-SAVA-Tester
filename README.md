@@ -12,3 +12,7 @@
  - 所需python >= 3.6.8
  - 执行 pip install -r requirements.txt 之后执行 sudo python3 client.py即可
  
+## 一些额外说明
+ - 整个过程可能会持续几分钟
+ - 看到finish all tests说明测试完成
+ 

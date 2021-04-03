@@ -42,7 +42,7 @@ def receive_log():
             filename = recv_control_message(client_socket)
             line_num = recv_control_message(client_socket)
             os.makedirs(os.path.split(filename)[0], exist_ok=True)
-            with open(f'{filename}', 'w') as f:
+            with open(f'{filename}', 'w', encoding='utf-8') as f:
                 for i in range(line_num):
                     content = recv_control_message(client_socket)
                     f.writelines([content])
