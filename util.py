@@ -261,7 +261,7 @@ def send_control_message(skt, data):
 def recv_control_message(skt):
     data_len = struct.unpack('i', skt.recv(4))[0]
     data = skt.recv(data_len).decode()
-    print(data)
+    # print(data)
     return json.loads(data)['data']
 
 
