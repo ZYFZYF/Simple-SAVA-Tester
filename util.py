@@ -227,7 +227,8 @@ def get_spoof_ips(dst_addr):
     for i in AVAILABLE_PREFIX:
         ip_list.append(get_local_addr_inside_subnet(LOCAL_IPv6_ADDR, i))
     # 加上所有活跃的clients
-    ip_list.extend(get_alive_clients())
+    # ip_list.extend(get_alive_clients())
+    ip_list.append(SERVER_ADDR)
 
     # 测试对面子网的inbound
     for i in AVAILABLE_PREFIX:
