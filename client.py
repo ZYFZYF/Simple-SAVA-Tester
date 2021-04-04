@@ -159,7 +159,8 @@ def send_test_to(skt, dst_addr):
                 logger.info(f'ping target is {target} and success {receive_count}/{TEST_REPEAT_COUNT}')
     # 将log文件转移到SERVER端
     logger.removeHandler(logfile)
-    transfer_log_to_server(log_path)
+    if LOCAL_IPv6_ADDR != SERVER_ADDR:
+        transfer_log_to_server(log_path)
 
 
 def receive_test_from(skt, src_addr):
