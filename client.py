@@ -87,7 +87,7 @@ def send_test_to(skt, dst_addr):
                                       send_normal_num=TEST_REPEAT_COUNT,
                                       recv_normal_num=recv_count_dict[LOCAL_IPv6_ADDR])
                 logger.info(
-                    f'{"forge":<10} {forge_addr:<40} {"to":<7} {dst_addr:<30} success {receive_count:<3}/{TEST_REPEAT_COUNT:<3}')
+                    f'{"forge":<10} {forge_addr:<40} {"to":<7} {dst_addr:<30} success {receive_count:>3}/{TEST_REPEAT_COUNT:<3}')
 
     forge_mac_list = get_spoof_macs()
     if RUN_MAC_SPOOF_TEST:
