@@ -4,12 +4,12 @@
 
 ## Client运行方法（For windows）
 
- - 所需python >= 3.6.8
+ - 在python3.6.8下运行成功（不保证更高版本或更低版本不存在兼容问题）
  - 在https://nmap.org/npcap/#download 安装npcap
  - 执行 pip install -r requirements.txt 之后以管理员权限执行 python3 client.py即可
 
 ## Client运行方法（For mac/linux）
- - 所需python >= 3.6.8
+ - 在python3.6.8下运行成功（不保证更高版本或更低版本不存在兼容问题）
  - 执行 pip install -r requirements.txt 之后执行 sudo python3 client.py即可
  
 ## 一些额外说明
@@ -17,4 +17,5 @@
  - 输出 所有测试结束 说明测试完成
  - 在windows上powershell里运行程序可能会出现问题，建议用cmd或者在pycharm里运行
  - 如果运行之后长时间没反应，可能是开了全局代理的原因，关闭之后再运行程序即可
+ 
  

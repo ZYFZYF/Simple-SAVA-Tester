@@ -105,3 +105,21 @@
 ## 2021-04-03
  - windows下上传文件老是出问题，log文件无法完整上传
  - 怎么有的windows电脑抓不到ping包呢
+ 
+## 2021-04-09
+ - 统计结果数据
+    - select os,ssid,count(distinct src_ip) as location_count,count(*) as test_cnt,avg(recv_spoof_num) as recv_spoof_num from IP_in_UDP group by os,ssid;
+    - select os,ssid,count(distinct src_mac) as location_count,count(*) as test_cnt,avg(recv_spoof_num) as recv_spoof_num from MAC_in_UDP group by os,ssid; 
+ - dq师兄的测试结果没有入库，只能从log里分析了
+ - 我的win测一下，ws师兄测一下       
+ - 问题：伪造mac 100个包收不全 
+ - log传输的也是有问题，有的log只收到一半
+ - zy师兄这边python client.py不出东西
+ 
+## 2021-04-12
+ - 连接问题已修复，dhcpv6服务器的问题，分配不到地址（慢查询的问题？）
+ - mac和windows连接Tsinghua-Secure所需要的步骤不一样么？
+    - 前者是旧密码，且不需要每次认证
+    - 后者是新密码，需要每次网页认证
+    - 和802.1x什么关系
+    - 我在阿里mac上也是每次都得网页认证，并且密码是新密码
