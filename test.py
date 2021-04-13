@@ -45,16 +45,10 @@ def test_icmp():
 
 
 def test_mac_modify():
-    spoof_macs = [LOCAL_MAC_ADDR[:-1] + 'e']
-    # LOCAL_MAC_ADDR[:-1] + 'f
-    # ]
-    # 'a4:83:e7:89:10:1e',
-    # '74:83:e7:89:10:1d',
-    # 'e4:83:e7:89:10:1d',
-    # 'a4:83:e7:89:10:1d']
+    spoof_macs = [LOCAL_MAC_ADDR[:-1] + 'a',
+                  LOCAL_MAC_ADDR[:-1] + 'e']
     for mac in spoof_macs:
-        print(mac)
-        while True:
+        for i in range(10):
             sendp(Ether(src=mac, dst=NEXT_HOP_MAC) / IPv6(dst='2001:da8:ff:212::41:23') / UDP(sport=9876, dport=9877),
                   iface=LOCAL_IPv6_IFACE)
             time.sleep(1)
@@ -69,8 +63,7 @@ def test_origin_mac():
     # 'e4:83:e7:89:10:1d',
     # 'a4:83:e7:89:10:1d']
     for mac in spoof_macs:
-        print(mac)
-        while True:
+        for i in range(10):
             sendp(Ether(src=mac, dst=NEXT_HOP_MAC) / IPv6(dst='2001:da8:ff:212::41:23') / UDP(sport=9876, dport=9877),
                   iface=LOCAL_IPv6_IFACE)
             time.sleep(1)
@@ -83,5 +76,6 @@ if __name__ == '__main__':
     #                                                                                          dport=9877) / 'Test')
     # test_trace_route()
     # test_icmp()
+    test_origin_mac()
+    time.sleep(30)
     test_mac_modify()
-    # test_origin_mac()
