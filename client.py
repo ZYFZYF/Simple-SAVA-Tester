@@ -314,7 +314,7 @@ def main():
     for addr in running_tests:
         do_test_with(addr)
     print('------------------------------------------  所有测试结束  ----------------------------------------------------')
-    # monitor_test()
+    monitor_test()
 
 
 def send_result_to_server(**data):
