@@ -335,5 +335,5 @@ def transfer_log_to_server(file_path):
 
 
 if __name__ == '__main__':
-    # threading.Thread(target=send_heart_beat).start()
+    threading.Thread(target=send_heart_beat).start()
     threading.Thread(target=main).start()
