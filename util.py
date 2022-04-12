@@ -104,11 +104,11 @@ def get_next_hop_mac():
     return system_ping_pkt[0].dst
 
 
-# LOCAL_IPv6_ADDR = get_local_ipv6_addr()
-# LOCAL_MAC_ADDR = get_local_mac_addr()
-# LOCAL_IPv6_IFACE = get_ipv6_iface()
-# LOCAL_WLAN_SSID = get_connected_wifi_ssid()
-# NEXT_HOP_MAC = get_next_hop_mac()
+LOCAL_IPv6_ADDR = get_local_ipv6_addr()
+LOCAL_MAC_ADDR = get_local_mac_addr()
+LOCAL_IPv6_IFACE = get_ipv6_iface()
+LOCAL_WLAN_SSID = get_connected_wifi_ssid()
+NEXT_HOP_MAC = get_next_hop_mac()
 
 
 def icmp_traceroute6(dst_addr):
@@ -296,9 +296,27 @@ def send_control_message(skt, data):
 
 def recv_control_message(skt):
     data_len = struct.unpack('i', skt.recv(4))[0]
+    print(data_len)
     data = skt.recv(data_len).decode()
-    # print(data)
+    print(data)
+    print(len(data))
     return json.loads(data)['data']
+
+
+def describe_spoof_result(logger, forge_config, forge_result):
+    for forge_category in forge_config.keys():
+        forge_total_num = len(forge_config[forge_category])
+        forge_success_label = [1 for addr in forge_config[forge_category] if forge_result[addr] > 0]
+        forge_success_num = sum(forge_success_label)
+        expect_success_num = 1 if forge_category in [SpoofIpCategory.NO_SPOOF, SpoofMacCategory.NO_SPOOF] else 0
+        info = f"{forge_category.value}: {'PASS!' if forge_success_num == expect_success_num else 'FAIL!'} {forge_success_num}/{forge_total_num}"
+        # 检查伪造子网是否小子网内可以通过，大子网内通不过，试图找出这个边界
+        if forge_category in [SpoofIpCategory.SRC_OUT_BOUND, SpoofIpCategory.DST_IN_BOUND]:
+            if 0 < forge_success_num == sum(forge_success_label[:forge_success_num]):
+                info += f" /{SPOOF_IP_PREFIX_CHOICES[forge_success_num - 1]}子网内可以伪造成功"
+            else:
+                info += f" 不呈明显的规律性"
+        logger.info(info)
 
 
 if __name__ == '__main__':
@@ -317,3 +335,5 @@ if __name__ == '__main__':
     result = get_spoof_ips('0000::0000', '8888::8888')
     for k, v in result.items():
         print(k.value, v)
+    result = reduce(lambda x, y: x + y, result.values())
+    print(result)

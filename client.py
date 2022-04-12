@@ -56,7 +56,8 @@ def send_test_to(skt, dst_addr):
     dst_port = recv_control_message(skt)
     # logger.info(f'prepare to send UDP packet to port {dst_port}')
 
-    forge_addr_list = get_spoof_ips(dst_addr)
+    forge_config = get_spoof_ips(LOCAL_IPv6_ADDR, dst_addr)
+    forge_addr_list = reduce(lambda lhs, rhs: lhs + rhs, forge_config.values())
     if RUN_IP_SPOOF_TEST:
         logger.info(
             '-------------------------------------------伪造源IP地址测试---------------------------------------------------')
@@ -73,6 +74,7 @@ def send_test_to(skt, dst_addr):
             f'send {TEST_REPEAT_COUNT * len(forge_addr_list)} packets and cost {int(time.time() - start_time)} seconds')
         send_finish_signal()
         recv_count_dict = recv_control_message(skt)
+        describe_spoof_result(logger, forge_config, recv_count_dict)
         for forge_addr, receive_count in recv_count_dict.items():
             if forge_addr != LOCAL_IPv6_ADDR:
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
@@ -89,7 +91,8 @@ def send_test_to(skt, dst_addr):
                 logger.info(
                     f'{"forge":<10} {forge_addr:<40} {"to":<7} {dst_addr:<30} success {receive_count:>3}/{TEST_REPEAT_COUNT:<3}')
 
-    forge_mac_list = get_spoof_macs(LOCAL_MAC_ADDR)
+    forge_config = get_spoof_macs(LOCAL_MAC_ADDR)
+    forge_mac_list = reduce(lambda lhs, rhs: lhs + rhs, forge_config.values())
     if RUN_MAC_SPOOF_TEST:
         logger.info(
             f'------------------------------------------伪造MAC地址测试----------------------------------------------------')
@@ -108,6 +111,7 @@ def send_test_to(skt, dst_addr):
             f'send {TEST_REPEAT_COUNT * len(forge_mac_list)} packets and cost {int(time.time() - start_time)} seconds')
         send_finish_signal()
         recv_count_dict = recv_control_message(skt)
+        describe_spoof_result(logger, forge_config, recv_count_dict)
         for forge_mac, receive_count in recv_count_dict.items():
             if forge_mac != LOCAL_MAC_ADDR:
                 send_result_to_server(ssid=LOCAL_WLAN_SSID,
