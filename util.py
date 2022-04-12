@@ -287,6 +287,13 @@ def get_spoof_macs(mac_addr):
     }
 
 
+def recv_exact_length(skt, data_len):
+    data = b''
+    while len(data) < data_len:
+        data += (skt.recv(data_len - len(data)))
+    return data
+
+
 # 通过TCP socket进行交互信息
 def send_control_message(skt, data):
     send_body = json.dumps({'data': data}).encode()
@@ -295,11 +302,8 @@ def send_control_message(skt, data):
 
 
 def recv_control_message(skt):
-    data_len = struct.unpack('i', skt.recv(4))[0]
-    print(data_len)
-    data = skt.recv(data_len).decode()
-    print(data)
-    print(len(data))
+    data_len = struct.unpack('i', recv_exact_length(skt, 4))[0]
+    data = recv_exact_length(skt, data_len).decode()
     return json.loads(data)['data']
 
 
@@ -309,10 +313,10 @@ def describe_spoof_result(logger, forge_config, forge_result):
         forge_success_label = [1 for addr in forge_config[forge_category] if forge_result[addr] > 0]
         forge_success_num = sum(forge_success_label)
         expect_success_num = 1 if forge_category in [SpoofIpCategory.NO_SPOOF, SpoofMacCategory.NO_SPOOF] else 0
-        info = f"{forge_category.value}: {'PASS!' if forge_success_num == expect_success_num else 'FAIL!'} {forge_success_num}/{forge_total_num}"
+        info = f"{forge_category.value : >20}: {'PASS!' if forge_success_num == expect_success_num else 'FAIL!' : <10} {forge_success_num :>3}/{forge_total_num :<3}"
         # 检查伪造子网是否小子网内可以通过，大子网内通不过，试图找出这个边界
-        if forge_category in [SpoofIpCategory.SRC_OUT_BOUND, SpoofIpCategory.DST_IN_BOUND]:
-            if 0 < forge_success_num == sum(forge_success_label[:forge_success_num]):
+        if forge_category in [SpoofIpCategory.SRC_OUT_BOUND, SpoofIpCategory.DST_IN_BOUND] and 0 < forge_success_num:
+            if forge_success_num == sum(forge_success_label[:forge_success_num]):
                 info += f" /{SPOOF_IP_PREFIX_CHOICES[forge_success_num - 1]}子网内可以伪造成功"
             else:
                 info += f" 不呈明显的规律性"

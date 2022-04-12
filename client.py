@@ -306,7 +306,7 @@ def main():
                 f'-------------------------------  结束与{addr}的测试  -----------------------------------------')
 
         except Exception as e:
-            print(f'ERROR: {e}')
+            traceback.print_exception(type(e), e, e.__traceback__)
 
     if RUN_TEST_WITH_OTHER_CLIENTS:
         running_tests = set([SERVER_ADDR] + get_alive_clients())
