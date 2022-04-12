@@ -1,5 +1,6 @@
 import ipaddress
 import json
+from enum import Enum
 
 import psutil
 import pymysql
@@ -10,6 +11,21 @@ from config import *
 
 # 初始化随机数种子
 random.seed(time.time())
+
+
+class SpoofMacCategory(Enum):
+    # NO_SPOOF = "不伪造"
+    FIX = "固定mac地址"
+    FIX_PREFIX = "固定前缀，随机后缀"
+    RANDOM = "完全随机"
+
+
+class SpoofIpCategory(Enum):
+    # NO_SPOOF = "不伪造"
+    FIX = "固定ip地址"
+    SRC_OUT_BOUND = "本子网出方向"
+    DST_IN_BOUND = "对端子网入方向"
+    ACTIVE_CLIENTS = "其他活跃客户端地址"
 
 
 # 通过IPv6包头拿到本机IPv6地址
@@ -224,23 +240,17 @@ def get_local_addr_inside_subnet(ip_addr, prefix_len):
     return translate_int_to_ipv6_addr(gateway + random.randint(0, subnet_space - 1))
 
 
-def get_spoof_ips(dst_addr):
-    ip_list = [LOCAL_IPv6_ADDR, RANDOM_ADDR]
-    # 测试本子网的outbound
-    for i in AVAILABLE_PREFIX:
-        ip_list.append(get_local_addr_inside_subnet(LOCAL_IPv6_ADDR, i))
-    # 加上所有活跃的clients
-    ip_list.extend(get_alive_clients())
-    ip_list.append(SERVER_ADDR)
-
-    # 测试对面子网的inbound
-    for i in AVAILABLE_PREFIX:
-        ip_list.append(get_local_addr_inside_subnet(dst_addr, i))
-    ip_list.append(dst_addr)
-    return ip_list
+def get_spoof_ips(src_addr, dst_addr):
+    return {
+        SpoofIpCategory.FIX: [RANDOM_ADDR],
+        SpoofIpCategory.SRC_OUT_BOUND: [get_local_addr_inside_subnet(src_addr, i) for i in SPOOF_IP_PREFIX_CHOICES],
+        SpoofIpCategory.DST_IN_BOUND: [get_local_addr_inside_subnet(dst_addr, i) for i in SPOOF_IP_PREFIX_CHOICES],
+        # SpoofIpCategory.ACTIVE_CLIENTS: [i for i in get_alive_clients() if i != src_addr]
+    }
 
 
 def is_valid_mac_int(mac_int):
+    # 第一个byte不能以1结尾
     return mac_int % (2 ** 48) // (2 ** 40) % 2 == 0
 
 
@@ -268,14 +278,11 @@ def get_local_mac_inside_subnet(ip_addr, prefix_len):
 
 
 def get_spoof_macs(mac_addr):
-    # 1. 随机地址 1个
-    # 2. 本身地址 1个
-    # 3. 固定前2/4/6/8/10个字符，随机后面的 5个
-    # 4. 完全随机 5个
-    return [RANDOM_MAC] + \
-           [mac_addr] + \
-           [get_local_mac_inside_subnet(mac_addr, i * 4) for i in reversed(range(2, 12, 2))] + \
-           [generate_valid_mac_addr() for _ in range(5)]
+    return {
+        SpoofMacCategory.FIX: [RANDOM_MAC],
+        SpoofMacCategory.FIX_PREFIX: [get_local_mac_inside_subnet(mac_addr, i * 4) for i in SPOOF_MAC_PREFIX_CHOICES],
+        SpoofMacCategory.RANDOM: [generate_valid_mac_addr() for _ in range(5)]
+    }
 
 
 # 通过TCP socket进行交互信息
@@ -296,10 +303,15 @@ if __name__ == '__main__':
     # print(get_spoof_ips(SERVER_ADDR))
     # print(translate_mac_addr_to_int(LOCAL_MAC_ADDR))
     # print(translate_int_to_mac_addr(translate_mac_addr_to_int(LOCAL_MAC_ADDR)))
-    print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
+    # print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
     # print(get_connected_wifi_ssid())
-    print(get_running_os())
+    # print(get_running_os())
     # clear_all_data()
-    for i in range(10):
-        print(generate_valid_mac_addr())
-    print(get_spoof_macs('a4:83:e7:89:10:1d'))
+    # for i in range(10):
+    #     print(generate_valid_mac_addr())
+    result = get_spoof_macs('a4:83:e7:89:10:1d')
+    for k, v in result.items():
+        print(k.value, v)
+    result = get_spoof_ips('0000::0000', '8888::8888')
+    for k, v in result.items():
+        print(k.value, v)
