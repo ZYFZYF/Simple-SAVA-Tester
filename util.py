@@ -8,6 +8,9 @@ from scapy.layers.inet6 import IPv6, Ether, UDP, traceroute6, ICMPv6EchoRequest
 
 from config import *
 
+# 初始化随机数种子
+random.seed(time.time())
+
 
 # 通过IPv6包头拿到本机IPv6地址
 def get_local_ipv6_addr():
@@ -85,11 +88,11 @@ def get_next_hop_mac():
     return system_ping_pkt[0].dst
 
 
-LOCAL_IPv6_ADDR = get_local_ipv6_addr()
-LOCAL_MAC_ADDR = get_local_mac_addr()
-LOCAL_IPv6_IFACE = get_ipv6_iface()
-LOCAL_WLAN_SSID = get_connected_wifi_ssid()
-NEXT_HOP_MAC = get_next_hop_mac()
+# LOCAL_IPv6_ADDR = get_local_ipv6_addr()
+# LOCAL_MAC_ADDR = get_local_mac_addr()
+# LOCAL_IPv6_IFACE = get_ipv6_iface()
+# LOCAL_WLAN_SSID = get_connected_wifi_ssid()
+# NEXT_HOP_MAC = get_next_hop_mac()
 
 
 def icmp_traceroute6(dst_addr):
@@ -237,6 +240,17 @@ def get_spoof_ips(dst_addr):
     return ip_list
 
 
+def is_valid_mac_int(mac_int):
+    return mac_int % (2 ** 48) // (2 ** 40) % 2 == 0
+
+
+def generate_valid_mac_addr():
+    while True:
+        mac_int = random.randint(0, 2 ** 48)
+        if is_valid_mac_int(mac_int):
+            return translate_int_to_mac_addr(mac_int)
+
+
 def translate_mac_addr_to_int(mac_addr):
     return int(mac_addr.replace(':', ''), 16)
 
@@ -253,8 +267,15 @@ def get_local_mac_inside_subnet(ip_addr, prefix_len):
     return translate_int_to_mac_addr(gateway + random.randint(0, subnet_space - 1))
 
 
-def get_spoof_macs():
-    return [LOCAL_MAC_ADDR, RANDOM_MAC] + [get_local_mac_inside_subnet(LOCAL_MAC_ADDR, i * 4) for i in range(2, 12)]
+def get_spoof_macs(mac_addr):
+    # 1. 随机地址 1个
+    # 2. 本身地址 1个
+    # 3. 固定前2/4/6/8/10个字符，随机后面的 5个
+    # 4. 完全随机 5个
+    return [RANDOM_MAC] + \
+           [mac_addr] + \
+           [get_local_mac_inside_subnet(mac_addr, i * 4) for i in reversed(range(2, 12, 2))] + \
+           [generate_valid_mac_addr() for _ in range(5)]
 
 
 # 通过TCP socket进行交互信息
@@ -274,10 +295,11 @@ def recv_control_message(skt):
 if __name__ == '__main__':
     # print(get_spoof_ips(SERVER_ADDR))
     # print(translate_mac_addr_to_int(LOCAL_MAC_ADDR))
-    #
     # print(translate_int_to_mac_addr(translate_mac_addr_to_int(LOCAL_MAC_ADDR)))
-    # print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
-    # g
+    print(translate_int_to_mac_addr(translate_mac_addr_to_int('04:83:e7:89:10:1d')))
     # print(get_connected_wifi_ssid())
-    # print(get_running_os())
-    clear_all_data()
+    print(get_running_os())
+    # clear_all_data()
+    for i in range(10):
+        print(generate_valid_mac_addr())
+    print(get_spoof_macs('a4:83:e7:89:10:1d'))
