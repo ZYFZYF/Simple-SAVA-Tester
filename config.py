@@ -23,7 +23,7 @@ FINISH_MESSAGE = 'FINISH'  # 发送数据包之后告诉对面，你可以结束
 
 # PING_TARGETS = ['2402:f000:11:210::17', '2402:f000:0:404::5']  # Ping的路径
 PING_TARGETS = []
-SPOOF_IP_PREFIX_CHOICES = list(reversed(list(range(12, 65, 4)))) + [10]
+SPOOF_IP_PREFIX_CHOICES = list(reversed(list(range(12, 81, 4)))) + [10]
 SPOOF_MAC_PREFIX_CHOICES = list(reversed([2, 4, 6, 8, 10]))
 # AVAILABLE_PREFIX = list(range(50, 60))
 

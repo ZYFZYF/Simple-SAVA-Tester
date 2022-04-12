@@ -14,14 +14,14 @@ random.seed(time.time())
 
 
 class SpoofMacCategory(Enum):
-    # NO_SPOOF = "不伪造"
+    NO_SPOOF = "不伪造"
     FIX = "固定mac地址"
     FIX_PREFIX = "固定前缀，随机后缀"
     RANDOM = "完全随机"
 
 
 class SpoofIpCategory(Enum):
-    # NO_SPOOF = "不伪造"
+    NO_SPOOF = "不伪造"
     FIX = "固定ip地址"
     SRC_OUT_BOUND = "本子网出方向"
     DST_IN_BOUND = "对端子网入方向"
@@ -242,10 +242,11 @@ def get_local_addr_inside_subnet(ip_addr, prefix_len):
 
 def get_spoof_ips(src_addr, dst_addr):
     return {
+        SpoofIpCategory.NO_SPOOF: [src_addr],
         SpoofIpCategory.FIX: [RANDOM_ADDR],
         SpoofIpCategory.SRC_OUT_BOUND: [get_local_addr_inside_subnet(src_addr, i) for i in SPOOF_IP_PREFIX_CHOICES],
         SpoofIpCategory.DST_IN_BOUND: [get_local_addr_inside_subnet(dst_addr, i) for i in SPOOF_IP_PREFIX_CHOICES],
-        # SpoofIpCategory.ACTIVE_CLIENTS: [i for i in get_alive_clients() if i != src_addr]
+        SpoofIpCategory.ACTIVE_CLIENTS: [i for i in get_alive_clients() if i != src_addr]
     }
 
 
@@ -279,6 +280,7 @@ def get_local_mac_inside_subnet(ip_addr, prefix_len):
 
 def get_spoof_macs(mac_addr):
     return {
+        SpoofMacCategory.NO_SPOOF: [mac_addr],
         SpoofMacCategory.FIX: [RANDOM_MAC],
         SpoofMacCategory.FIX_PREFIX: [get_local_mac_inside_subnet(mac_addr, i * 4) for i in SPOOF_MAC_PREFIX_CHOICES],
         SpoofMacCategory.RANDOM: [generate_valid_mac_addr() for _ in range(5)]
