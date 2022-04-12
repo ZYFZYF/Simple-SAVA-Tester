@@ -310,14 +310,25 @@ def recv_control_message(skt):
 def describe_spoof_result(logger, forge_config, forge_result):
     for forge_category in forge_config.keys():
         forge_total_num = len(forge_config[forge_category])
-        forge_success_label = [1 for addr in forge_config[forge_category] if forge_result[addr] > 0]
+        forge_success_label = [1 if forge_result[addr] > 0 else 0 for addr in forge_config[forge_category]]
         forge_success_num = sum(forge_success_label)
         expect_success_num = 1 if forge_category in [SpoofIpCategory.NO_SPOOF, SpoofMacCategory.NO_SPOOF] else 0
-        info = f"{forge_category.value : >20}: {'PASS!' if forge_success_num == expect_success_num else 'FAIL!' : <10} {forge_success_num :>3}/{forge_total_num :<3}"
+        info = f"{'PASS!' if forge_success_num == expect_success_num else 'FAIL!' : <10} {forge_success_num :>3}/{forge_total_num :<10} {forge_category.value :<15}"
         # 检查伪造子网是否小子网内可以通过，大子网内通不过，试图找出这个边界
         if forge_category in [SpoofIpCategory.SRC_OUT_BOUND, SpoofIpCategory.DST_IN_BOUND] and 0 < forge_success_num:
-            if forge_success_num == sum(forge_success_label[:forge_success_num]):
-                info += f" /{SPOOF_IP_PREFIX_CHOICES[forge_success_num - 1]}子网内可以伪造成功"
+            l = None
+            for i in range(len(SPOOF_IP_PREFIX_CHOICES)):
+                if forge_success_label[i] == 1:
+                    l = i
+                    break
+            r = None
+            for i in reversed(range(len(SPOOF_IP_PREFIX_CHOICES))):
+                if forge_success_label[i] == 1:
+                    r = i
+                    break
+            # 如果是连续的一段
+            if forge_success_num == sum(forge_success_label[l:r + 1]):
+                info += f" /{SPOOF_IP_PREFIX_CHOICES[l]} ~ /{SPOOF_IP_PREFIX_CHOICES[r]}子网内可以伪造成功"
             else:
                 info += f" 不呈明显的规律性"
         logger.info(info)
