@@ -246,7 +246,7 @@ def get_spoof_ips(src_addr, dst_addr):
         SpoofIpCategory.FIX: [RANDOM_ADDR],
         SpoofIpCategory.SRC_OUT_BOUND: [get_local_addr_inside_subnet(src_addr, i) for i in SPOOF_IP_PREFIX_CHOICES],
         SpoofIpCategory.DST_IN_BOUND: [get_local_addr_inside_subnet(dst_addr, i) for i in SPOOF_IP_PREFIX_CHOICES],
-        SpoofIpCategory.ACTIVE_CLIENTS: [i for i in get_alive_clients() if i != src_addr]
+        SpoofIpCategory.ACTIVE_CLIENTS: [i for i in get_alive_clients() if i != src_addr and i != dst_addr]
     }
 
 
