@@ -15,7 +15,7 @@ MONITOR_TCP_PORT = 15004  # client监听该端口来建立TCP连接与其他clie
 TRANSFER_LOG_FILE_PORT = 15005  # server监听这个端口来接受client生成的log文件
 FIRST_UNUSED_PORT = 15006  # 分配给做测试用
 
-TEST_REPEAT_COUNT = 100  # 每个测试包发送次数
+TEST_REPEAT_COUNT = 10  # 每个测试包发送次数
 TEST_WAIT_SECONDS = 3  # 每个测试等待时间，从发送完最后一个包到开始统计的时间，所以相对可以较短
 
 READY_MESSAGE = 'READY'  # sniff准备好之后的回调，用来告诉对方我准备好了

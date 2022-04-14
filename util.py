@@ -154,7 +154,8 @@ def parse_payload(pkt):
 
 def get_alive_clients():
     if get_local_ipv6_addr() == SERVER_ADDR:
-        return []
+        from server import ClientManager
+        return ClientManager.get_alive_clients()
     while True:
         sendp(Ether(src=LOCAL_MAC_ADDR, dst=NEXT_HOP_MAC) / IPv6(dst=SERVER_ADDR) / UDP(sport=ACCESS_CLIENT_LIST_PORT,
                                                                                         dport=ACCESS_CLIENT_LIST_PORT),

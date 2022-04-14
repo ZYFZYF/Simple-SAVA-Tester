@@ -1,14 +1,18 @@
-import time, threading
+import threading
+import time
+
 from config import *
 
 
 class ClientManager(threading.Thread):
+    last_heart_beat_time = dict()
+
     def __init__(self):
         super(ClientManager, self).__init__()
-        self.last_heart_beat_time = dict()
 
-    def get_alive_clients(self):
-        return list(self.last_heart_beat_time.keys())
+    @classmethod
+    def get_alive_clients(cls):
+        return list(cls.last_heart_beat_time.keys())
 
     def receive_heart_beat(self, addr):
         if addr not in self.last_heart_beat_time.keys():
